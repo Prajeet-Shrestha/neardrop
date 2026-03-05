@@ -28,7 +28,9 @@ function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDevice
 
   function saveMeta(meta) {
     try {
-      fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf8');
+      const tmp = metaPath + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(meta, null, 2), 'utf8');
+      fs.renameSync(tmp, metaPath);
     } catch (e) {
       console.error('Failed to save upload metadata:', e.message);
     }

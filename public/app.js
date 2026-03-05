@@ -1180,7 +1180,7 @@
     const msgEl = document.createElement('div');
     msgEl.className = `chat-msg ${isSelf ? 'self' : ''}`;
     msgEl.innerHTML = `
-      ${!isSelf ? `<div class="chat-msg-sender">${getDeviceIcon(msg.from.os)} ${msg.from.hostname}</div>` : ''}
+      ${!isSelf ? `<div class="chat-msg-sender">${getDeviceIcon(msg.from.os)} ${esc(msg.from.hostname)}</div>` : ''}
       <div class="chat-msg-bubble">${formatChatText(msg.text)}</div>
       <div class="chat-msg-time">${formatTime(msg.timestamp)}</div>
     `;
@@ -1320,7 +1320,7 @@
     dom.connectedDevices.innerHTML = state.devices.map(d => `
       <div class="sidebar-item device-item${state.filterDeviceId === d.deviceId ? ' active' : ''}" data-device-id="${esc(d.deviceId || '')}">
         <span class="sidebar-icon">${getDeviceIcon(d.os)}</span>
-        <span>${d.hostname}</span>
+        <span>${esc(d.hostname)}</span>
         ${state.isHost && !d.isHost ? `<button class="device-remove-btn" data-ip="${esc(d.ip)}" data-hostname="${esc(d.hostname)}" title="Remove device">${removeIcon}</button>` : ''}
       </div>
     `).join('');
@@ -1442,6 +1442,8 @@
     card.querySelector('.dl-card-cancel').addEventListener('click', () => {
       if (!entry.completed) {
         entry.completed = true;
+        removeDownloadCard(id);
+        showToast('info', 'Download cancelled');
         entry.controller.abort();
       }
     });
@@ -1603,11 +1605,12 @@
   }
 
   function formatChatText(text) {
-    // Detect code blocks
-    if (text.includes('```')) {
-      return text.replace(/```([\s\S]*?)```/g, '<pre style="background:rgba(0,0,0,0.3);padding:8px;border-radius:4px;font-size:12px;overflow-x:auto;margin:4px 0">$1</pre>');
+    // Escape all text first for safety, then apply code block formatting
+    const escaped = esc(text);
+    if (escaped.includes('```')) {
+      return escaped.replace(/```([\s\S]*?)```/g, (_, code) => `<pre class="chat-code-block">${code}</pre>`);
     }
-    return text;
+    return escaped;
   }
 
   function setupEventListeners() {

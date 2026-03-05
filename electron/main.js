@@ -318,11 +318,6 @@ app.whenReady().then(async () => {
   // Initialize auto-updater (only in packaged builds)
   initAutoUpdater(mainWindow);
 
-  // Auto-start on login
-  if (app.isPackaged) {
-    app.setLoginItemSettings({ openAtLogin: true });
-  }
-
   // Update tray menu periodically (PIN might change)
   setInterval(updateTrayMenu, 5000);
 });

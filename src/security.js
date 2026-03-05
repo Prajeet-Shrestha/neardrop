@@ -52,10 +52,43 @@ function securityHeaders(req, res, next) {
   next();
 }
 
-// CORS middleware - permissive for LAN usage (PIN auth protects access)
+// Check if an origin is from a LAN (private network) address
+function isLanOrigin(origin) {
+  if (!origin || origin === 'null') return false;
+  
+  let parsed;
+  try { parsed = new URL(origin); } catch (e) { return false; }
+  
+  // Only allow http/https protocols
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  
+  const hostname = parsed.hostname;
+  
+  // Localhost variants
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return true;
+  
+  // Strip IPv4-mapped IPv6 prefix
+  const stripped = hostname.replace('::ffff:', '');
+  
+  // Must be a strict IPv4 address (prevents bypass via 192.168.1.5.evil.com)
+  if (!/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(stripped)) return false;
+  
+  const octets = stripped.split('.').map(Number);
+  if (octets.some(o => o < 0 || o > 255)) return false;
+  
+  // RFC-1918 private ranges
+  if (octets[0] === 10) return true;                                         // 10.0.0.0/8
+  if (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) return true;  // 172.16.0.0/12
+  if (octets[0] === 192 && octets[1] === 168) return true;                   // 192.168.0.0/16
+  if (octets[0] === 169 && octets[1] === 254) return true;                   // 169.254.0.0/16 (link-local)
+  
+  return false;
+}
+
+// CORS middleware — only reflects origins from LAN/localhost (PIN auth as secondary protection)
 function corsMiddleware(req, res, next) {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && isLanOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
@@ -77,7 +110,7 @@ function createRateLimiter(maxRequests = 100, windowMs = 60000) {
     for (const [ip, data] of hits) {
       if (now - data.start > windowMs) hits.delete(ip);
     }
-  }, windowMs);
+  }, windowMs).unref();
   
   return (req, res, next) => {
     const ip = req.ip || req.connection.remoteAddress;
@@ -124,4 +157,5 @@ module.exports = {
   corsMiddleware,
   createRateLimiter,
   ipAllowlist,
+  isLanOrigin,
 };

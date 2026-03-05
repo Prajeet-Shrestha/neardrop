@@ -9,7 +9,13 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 30 * 60 * 1000; // 30 minutes
 
 function generatePin() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
+}
+
+// Normalize IP address — strip IPv4-mapped IPv6 prefix
+function normalizeIp(ip) {
+  if (!ip) return '';
+  return ip.replace('::ffff:', '');
 }
 
 // Check if the request originates from the host machine (loopback)
@@ -139,6 +145,10 @@ function validateWsAuth(cookie, socketIp) {
     sessions.delete(token);
     return false;
   }
+  // Bind to IP (match HTTP middleware behavior)
+  if (normalizeIp(session.ip) !== normalizeIp(socketIp)) {
+    return false;
+  }
   return true;
 }
 
@@ -159,10 +169,11 @@ setInterval(() => {
       failedAttempts.delete(ip);
     }
   }
-}, 60000);
+}, 60000).unref();
 
 module.exports = {
   generatePin,
+  normalizeIp,
   createAuthMiddleware,
   handleAuth,
   handleLogout,

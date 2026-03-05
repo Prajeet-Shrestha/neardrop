@@ -79,8 +79,9 @@ function handleMessage(ws, msg, wss) {
     case 'register-device': {
       const device = connectedDevices.get(ws);
       if (device) {
-        device.hostname = escapeHtml(msg.hostname || os.hostname());
-        device.os = escapeHtml(msg.os || process.platform);
+        // Store raw values — client escapes at render time (Approach A)
+        device.hostname = (msg.hostname || os.hostname()).substring(0, 100);
+        device.os = (msg.os || process.platform).substring(0, 50);
         device.deviceId = msg.deviceId || null;
         device.userAgent = msg.userAgent || '';
         
@@ -109,7 +110,7 @@ function handleMessage(ws, msg, wss) {
       const device = connectedDevices.get(ws);
       if (!device || !msg.text) return;
       
-      const text = escapeHtml(msg.text.substring(0, 10000)); // Limit message length
+      const text = msg.text.substring(0, 10000); // Limit length; client escapes at render time
       const chatMsg = {
         type: 'chat-message',
         from: { hostname: device.hostname, os: device.os },
@@ -254,7 +255,9 @@ function loadDeviceRegistry() {
 function saveDeviceRegistry(registry) {
   if (!registryPath) return;
   try {
-    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf8');
+    const tmp = registryPath + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify(registry, null, 2), 'utf8');
+    fs.renameSync(tmp, registryPath);
   } catch (e) {
     console.error('Failed to save device registry:', e.message);
   }

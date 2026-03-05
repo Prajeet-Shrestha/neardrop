@@ -40,7 +40,7 @@ setRegistryPath(config.dir);
 
 // Express app
 const app = express();
-app.set('trust proxy', true);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -120,7 +120,7 @@ async function startServer(overrides = {}) {
   }
 
   // WebSocket server
-  const wss = new WebSocketServer({ server });
+  const wss = new WebSocketServer({ server, maxPayload: 64 * 1024 });
   const broadcast = createBroadcaster(wss);
 
   // Setup WebSocket handlers
