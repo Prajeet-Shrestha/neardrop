@@ -35,6 +35,12 @@ Download the latest release for your platform from [GitHub Releases](https://git
 | Windows | `NearDrop Setup x.x.x.exe` |
 | Linux | `NearDrop-x.x.x.AppImage` |
 
+> **Linux users:** After downloading the AppImage, you must make it executable before running:
+> ```bash
+> chmod +x NearDrop-*.AppImage
+> ./NearDrop-*.AppImage
+> ```
+
 ### From Source
 
 ```bash

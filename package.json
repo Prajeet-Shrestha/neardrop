@@ -11,7 +11,7 @@
     "electron:build": "electron-builder",
     "electron:build:mac": "electron-builder --mac",
     "electron:build:win": "electron-builder --win",
-    "electron:build:linux": "electron-builder --linux",
+    "electron:build:linux": "electron-builder --linux && chmod +x dist-electron/*.AppImage 2>/dev/null || true",
     "electron:build:all": "electron-builder -mwl",
     "build": "pkg .",
     "build:mac-arm64": "pkg . --target node22-macos-arm64 --out-path dist",
