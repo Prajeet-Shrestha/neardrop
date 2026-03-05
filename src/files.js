@@ -8,7 +8,7 @@ const mime = require('mime-types');
 const { safePath, checkSymlinkJail, sanitizeFilename } = require('./security');
 const { formatBytes, getFileKind, getFileIconType, isImageFile, generateConflictFreeName, getDiskSpace } = require('./utils');
 
-function createFileRoutes(config, broadcast, pin) {
+function createFileRoutes(config, broadcast, pinStore) {
   const router = express.Router();
   const rootDir = config.dir;
   const tempDir = path.join(rootDir, '.connectlan-tmp');
@@ -81,7 +81,7 @@ function createFileRoutes(config, broadcast, pin) {
       
       res.json({
         urls,
-        pin,
+        pin: pinStore.current,
         protocol,
         port,
         noTls: !!config.noTls,

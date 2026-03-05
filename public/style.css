@@ -835,6 +835,19 @@ html, body {
   font-size: 20px; letter-spacing: 6px; font-weight: 600;
   color: var(--accent);
 }
+.connect-pin-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.connect-pin-row .connect-copyable { flex: 1; }
+.connect-refresh-btn {
+  background: rgba(255,255,255,0.06); border: 1px solid var(--divider);
+  color: var(--text-secondary); cursor: pointer;
+  padding: 8px; border-radius: var(--radius); display: flex;
+  align-items: center; justify-content: center;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.connect-refresh-btn:hover { background: rgba(0,122,255,0.12); border-color: var(--accent); color: var(--accent); }
+.connect-refresh-btn.spinning svg { animation: spin 0.6s linear; }
 .connect-steps {
   margin-top: 16px;
   padding-top: 16px;

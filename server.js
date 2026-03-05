@@ -26,7 +26,7 @@ const { setupWebSocket, getChatHistory, getDeviceList, createBroadcaster } = req
 
 // Parse CLI args
 const config = parseArgs(process.argv.slice(2));
-const PIN = config.pin || generatePin();
+const pinStore = { current: config.pin || generatePin() };
 
 // Ensure shared directory exists
 if (!fs.existsSync(config.dir)) {
@@ -49,10 +49,10 @@ if (config.allowIps.length > 0) {
 }
 
 // Auth middleware
-app.use(createAuthMiddleware(PIN));
+app.use(createAuthMiddleware(pinStore));
 
 // Auth routes (before static files)
-app.post('/api/auth', handleAuth(PIN));
+app.post('/api/auth', handleAuth(pinStore));
 app.post('/api/logout', handleLogout);
 
 // Static files
@@ -114,7 +114,20 @@ app.use(express.static(path.join(__dirname, 'public')));
   setupWebSocket(wss, validateWsAuth);
 
   // File routes (need broadcast function)
-  app.use('/api', createFileRoutes(config, broadcast, PIN));
+  app.use('/api', createFileRoutes(config, broadcast, pinStore));
+
+  // Refresh PIN — host only
+  app.post('/api/refresh-pin', (req, res) => {
+    const { isLocalhostSocket } = require('./src/auth');
+    if (!isLocalhostSocket(req.socket.remoteAddress)) {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    pinStore.current = generatePin();
+    console.log(`  \x1b[1m🔑 PIN refreshed:\x1b[0m  \x1b[33m\x1b[1m${pinStore.current}\x1b[0m`);
+    // Broadcast to all clients so host UI can update
+    broadcast({ type: 'pin-refreshed' });
+    return res.json({ success: true, pin: pinStore.current });
+  });
 
   // Chat history endpoint
   app.get('/api/chat/history', (req, res) => {
@@ -161,7 +174,7 @@ app.use(express.static(path.join(__dirname, 'public')));
     console.log('\x1b[1m\x1b[36m  ║         🔗 ConnectLAN v1.0.0              ║\x1b[0m');
     console.log('\x1b[1m\x1b[36m  ╚═══════════════════════════════════════════╝\x1b[0m');
     console.log('');
-    console.log(`  \x1b[1m🔑 PIN:\x1b[0m  \x1b[33m\x1b[1m${PIN}\x1b[0m`);
+    console.log(`  \x1b[1m🔑 PIN:\x1b[0m  \x1b[33m\x1b[1m${pinStore.current}\x1b[0m`);
     console.log(`  \x1b[1m📁 Shared:\x1b[0m ${config.dir}`);
     console.log(`  \x1b[1m💾 Disk:\x1b[0m   ${formatBytes(disk.free)} free of ${formatBytes(disk.total)}`);
     console.log(`  \x1b[1m🔒 TLS:\x1b[0m    ${config.noTls ? 'Disabled (HTTP)' : 'Enabled (HTTPS)'}`);

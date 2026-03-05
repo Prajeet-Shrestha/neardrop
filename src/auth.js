@@ -24,7 +24,7 @@ function generateSessionToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-function createAuthMiddleware(pin) {
+function createAuthMiddleware(pinStore) {
   return (req, res, next) => {
     // Skip auth for auth endpoints and static files
     if (req.path === '/api/auth' || !req.path.startsWith('/api/')) {
@@ -68,7 +68,7 @@ function createAuthMiddleware(pin) {
   };
 }
 
-function handleAuth(pin) {
+function handleAuth(pinStore) {
   return (req, res) => {
     const clientIp = req.ip || req.connection.remoteAddress;
     const { pin: submittedPin } = req.body;
@@ -83,7 +83,7 @@ function handleAuth(pin) {
       });
     }
     
-    if (submittedPin !== pin) {
+    if (submittedPin !== pinStore.current) {
       // Track failed attempt
       if (!failedAttempts.has(clientIp)) {
         failedAttempts.set(clientIp, { count: 0, lockedUntil: null });
