@@ -20,13 +20,13 @@
       <p class="login-subtitle">Enter the PIN shown on the server terminal</p>
       <form id="login-form" autocomplete="off">
         <div class="pin-input-group" id="pin-input-group">
-          <input type="text" class="pin-digit" maxlength="1" autocomplete="off" inputmode="numeric" pattern="[0-9]*" data-index="0">
-          <input type="text" class="pin-digit" maxlength="1" autocomplete="off" inputmode="numeric" pattern="[0-9]*" data-index="1">
-          <input type="text" class="pin-digit" maxlength="1" autocomplete="off" inputmode="numeric" pattern="[0-9]*" data-index="2">
+          <input type="text" class="pin-digit" autocomplete="off" data-index="0">
+          <input type="text" class="pin-digit" autocomplete="off" data-index="1">
+          <input type="text" class="pin-digit" autocomplete="off" data-index="2">
           <span class="pin-separator">–</span>
-          <input type="text" class="pin-digit" maxlength="1" autocomplete="off" inputmode="numeric" pattern="[0-9]*" data-index="3">
-          <input type="text" class="pin-digit" maxlength="1" autocomplete="off" inputmode="numeric" pattern="[0-9]*" data-index="4">
-          <input type="text" class="pin-digit" maxlength="1" autocomplete="off" inputmode="numeric" pattern="[0-9]*" data-index="5">
+          <input type="text" class="pin-digit" autocomplete="off" data-index="3">
+          <input type="text" class="pin-digit" autocomplete="off" data-index="4">
+          <input type="text" class="pin-digit" autocomplete="off" data-index="5">
         </div>
         <div class="device-name-group">
           <input type="text" id="device-name-input" class="device-name-input" maxlength="30" placeholder="Device name (optional)" autocomplete="off">
@@ -141,6 +141,7 @@
             <div class="list-col col-date">Date Modified</div>
             <div class="list-col col-size">Size</div>
             <div class="list-col col-kind">Kind</div>
+            <div class="list-col col-uploader">Uploaded By</div>
           </div>
           <div class="list-body" id="list-body"></div>
         </div>
@@ -162,7 +163,7 @@
       <!-- CHAT PANEL -->
       <div class="chat-panel hidden" id="chat-panel">
         <div class="chat-header">
-          <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>Chat</span>
+          <span><svg class="inline-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"/></svg>Chat</span>
           <button class="chat-close" id="chat-close">×</button>
         </div>
         <div class="chat-messages" id="chat-messages"></div>
@@ -219,7 +220,7 @@
     <div class="connect-modal-overlay hidden" id="connect-modal-overlay">
       <div class="connect-modal">
         <div class="connect-modal-header">
-          <span class="connect-modal-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Connect Device</span>
+          <span class="connect-modal-title"><svg class="inline-icon-lg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>Connect Device</span>
           <button class="connect-modal-close" id="connect-modal-close">&times;</button>
         </div>
         <div class="connect-modal-body">
@@ -265,7 +266,7 @@
 
     <!-- RECONNECTING BANNER -->
     <div class="reconnect-banner hidden" id="reconnect-banner">
-      <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px;animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-1.64-8.36L23 10"/></svg> Reconnecting...</span>
+      <span><svg class="inline-icon reconnect-spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-1.64-8.36L23 10"/></svg> Reconnecting...</span>
     </div>
   </div>
 

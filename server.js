@@ -22,7 +22,7 @@ const { parseArgs, getLocalIPs, formatBytes, getDiskSpace } = require('./src/uti
 const { securityHeaders, corsMiddleware, createRateLimiter, ipAllowlist } = require('./src/security');
 const { generatePin, createAuthMiddleware, handleAuth, handleLogout, validateWsAuth } = require('./src/auth');
 const { createFileRoutes } = require('./src/files');
-const { setupWebSocket, getChatHistory, getDeviceList, createBroadcaster } = require('./src/chat');
+const { setupWebSocket, getChatHistory, getDeviceList, getDeviceByIp, setRegistryPath, loadDeviceRegistry, createBroadcaster } = require('./src/chat');
 
 // Parse CLI args
 const config = parseArgs(process.argv.slice(2));
@@ -33,6 +33,9 @@ if (!fs.existsSync(config.dir)) {
   fs.mkdirSync(config.dir, { recursive: true });
   console.log(`\x1b[33mCreated shared directory: ${config.dir}\x1b[0m`);
 }
+
+// Set device registry path
+setRegistryPath(config.dir);
 
 // Express app
 const app = express();
@@ -114,7 +117,7 @@ app.use(express.static(path.join(__dirname, 'public')));
   setupWebSocket(wss, validateWsAuth);
 
   // File routes (need broadcast function)
-  app.use('/api', createFileRoutes(config, broadcast, pinStore));
+  app.use('/api', createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDeviceRegistry));
 
   // Refresh PIN — host only
   app.post('/api/refresh-pin', (req, res) => {

@@ -351,6 +351,11 @@ html, body {
   font-size: 10px; color: var(--accent); margin-top: 2px;
   text-align: center;
 }
+.file-uploader {
+  font-size: 9px; color: var(--text-tertiary); margin-top: 1px;
+  text-align: center; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 100%;
+}
 .file-name-input {
   font-size: 11px; text-align: center; width: 90%;
   background: var(--accent); color: #fff; border: none;
@@ -371,6 +376,7 @@ html, body {
 .col-date { flex: 2; }
 .col-size { flex: 1; text-align: right; }
 .col-kind { flex: 1.5; }
+.col-uploader { flex: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-row {
   display: flex; align-items: center; padding: 4px 12px;
   border-radius: var(--radius-sm); cursor: default; user-select: none;
@@ -626,6 +632,10 @@ html, body {
   animation: pulse 1.5s infinite;
 }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+/* Inline SVG icon alignment helpers */
+.inline-icon { vertical-align: -2px; margin-right: 4px; }
+.inline-icon-lg { vertical-align: -3px; margin-right: 6px; }
+.reconnect-spinner { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* =====================================================
@@ -714,6 +724,7 @@ html, body {
 
   /* List view adjustments */
   .col-kind { display: none; }
+  .col-uploader { display: none; }
   .col-date { flex: 1.5; font-size: 11px; }
   .col-size { font-size: 11px; }
 

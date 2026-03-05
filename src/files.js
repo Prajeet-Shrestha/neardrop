@@ -8,11 +8,73 @@ const mime = require('mime-types');
 const { safePath, checkSymlinkJail, sanitizeFilename } = require('./security');
 const { formatBytes, getFileKind, getFileIconType, isImageFile, generateConflictFreeName, getDiskSpace } = require('./utils');
 
-function createFileRoutes(config, broadcast, pinStore) {
+function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDeviceRegistry) {
   const router = express.Router();
   const rootDir = config.dir;
   const tempDir = path.join(rootDir, '.connectlan-tmp');
+  const metaPath = path.join(rootDir, '.connectlan-meta.json');
   const maxUploadSize = config.maxUploadSize || 10 * 1024 * 1024 * 1024; // 10GB
+
+  // ─── Upload Metadata Store ───────────────────────────
+  function loadMeta() {
+    try {
+      if (fs.existsSync(metaPath)) {
+        return JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+      }
+    } catch (e) { /* corrupt file, start fresh */ }
+    return {};
+  }
+
+  function saveMeta(meta) {
+    try {
+      fs.writeFileSync(metaPath, JSON.stringify(meta, null, 2), 'utf8');
+    } catch (e) {
+      console.error('Failed to save upload metadata:', e.message);
+    }
+  }
+
+  function setFileMeta(relativePath, uploaderName, uploaderIp, deviceId) {
+    const meta = loadMeta();
+    meta[relativePath] = {
+      uploaderName,
+      uploaderIp,
+      deviceId: deviceId || null,
+      uploadedAt: new Date().toISOString(),
+    };
+    saveMeta(meta);
+  }
+
+  function deleteFileMeta(relativePath) {
+    const meta = loadMeta();
+    // Delete exact match and any children (for folders)
+    const keysToDelete = Object.keys(meta).filter(
+      k => k === relativePath || k.startsWith(relativePath + '/')
+    );
+    if (keysToDelete.length > 0) {
+      keysToDelete.forEach(k => delete meta[k]);
+      saveMeta(meta);
+    }
+  }
+
+  function renameFileMeta(oldPath, newPath) {
+    const meta = loadMeta();
+    // Rename exact match and any children
+    const updates = [];
+    for (const k of Object.keys(meta)) {
+      if (k === oldPath) {
+        updates.push([k, newPath]);
+      } else if (k.startsWith(oldPath + '/')) {
+        updates.push([k, newPath + k.slice(oldPath.length)]);
+      }
+    }
+    if (updates.length > 0) {
+      for (const [oldK, newK] of updates) {
+        meta[newK] = meta[oldK];
+        delete meta[oldK];
+      }
+      saveMeta(meta);
+    }
+  }
   
   // Ensure temp dir exists
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -113,10 +175,12 @@ function createFileRoutes(config, broadcast, pinStore) {
       
       const entries = await fs.promises.readdir(resolved, { withFileTypes: true });
       const files = [];
+      const meta = loadMeta();
+      const deviceRegistry = loadDeviceRegistry ? loadDeviceRegistry() : {};
       
       for (const entry of entries) {
-        // Skip temp dir
-        if (entry.name === '.connectlan-tmp') continue;
+        // Skip temp dir and meta file
+        if (entry.name === '.connectlan-tmp' || entry.name === '.connectlan-meta.json' || entry.name === '.connectlan-devices.json') continue;
         // Skip dotfiles unless requested
         if (!showHidden && entry.name.startsWith('.')) continue;
         
@@ -134,6 +198,15 @@ function createFileRoutes(config, broadcast, pinStore) {
             } catch (e) { /* permission denied */ }
           }
           
+          const relPath = path.relative(rootDir, fullPath);
+          const uploadInfo = meta[relPath] || null;
+
+          // Dynamically resolve the latest name from device registry
+          let displayName = uploadInfo ? uploadInfo.uploaderName : null;
+          if (uploadInfo && uploadInfo.deviceId && deviceRegistry[uploadInfo.deviceId]) {
+            displayName = deviceRegistry[uploadInfo.deviceId].hostname;
+          }
+
           files.push({
             name: entry.name,
             isDirectory: isDir,
@@ -143,7 +216,11 @@ function createFileRoutes(config, broadcast, pinStore) {
             kind: getFileKind(entry.name, isDir),
             iconType: getFileIconType(entry.name, isDir),
             isImage: isImageFile(entry.name),
-            path: path.relative(rootDir, fullPath),
+            path: relPath,
+            uploadedBy: displayName,
+            uploaderIp: uploadInfo ? uploadInfo.uploaderIp : null,
+            deviceId: uploadInfo ? uploadInfo.deviceId : null,
+            uploadedAt: uploadInfo ? uploadInfo.uploadedAt : null,
           });
         } catch (e) {
           // Skip files we can't read (EACCES)
@@ -182,6 +259,10 @@ function createFileRoutes(config, broadcast, pinStore) {
       }
       
       const uploaded = [];
+      const clientIp = (req.ip || req.connection.remoteAddress || '').replace('::ffff:', '');
+      const device = getDeviceByIp(clientIp);
+      const uploaderName = device ? device.hostname : 'Unknown';
+
       for (const file of req.files) {
         const safeName = sanitizeFilename(file.originalname);
         let finalPath = path.join(resolved, safeName);
@@ -197,7 +278,11 @@ function createFileRoutes(config, broadcast, pinStore) {
         
         // Atomic move from temp
         await fs.promises.rename(file.path, finalPath);
+        const relPath = path.relative(rootDir, finalPath);
         uploaded.push(path.basename(finalPath));
+
+        // Record upload metadata
+        setFileMeta(relPath, uploaderName, clientIp, device ? device.deviceId : null);
       }
       
       // Broadcast file change
@@ -334,6 +419,13 @@ function createFileRoutes(config, broadcast, pinStore) {
       const finalPath = generateConflictFreeName(newDir);
       await fs.promises.mkdir(finalPath, { recursive: true });
       
+      // Record creator metadata
+      const clientIp = (req.ip || req.connection.remoteAddress || '').replace('::ffff:', '');
+      const device = getDeviceByIp(clientIp);
+      const creatorName = device ? device.hostname : 'Unknown';
+      const relPath = path.relative(rootDir, finalPath);
+      setFileMeta(relPath, creatorName, clientIp, device ? device.deviceId : null);
+
       broadcast({ type: 'file-changed', action: 'created', path: dirPath || '' });
       res.json({ success: true, name: path.basename(finalPath) });
     } catch (e) {
@@ -353,7 +445,11 @@ function createFileRoutes(config, broadcast, pinStore) {
       if (!stat) return res.status(404).json({ error: 'Not found' });
       
       await fs.promises.rm(resolved, { recursive: true, force: true });
-      
+
+      // Remove upload metadata
+      const filePath2 = req.body.path;
+      deleteFileMeta(filePath2);
+
       const parentPath = path.relative(rootDir, path.dirname(resolved));
       broadcast({ type: 'file-changed', action: 'deleted', path: parentPath });
       res.json({ success: true });
@@ -380,7 +476,12 @@ function createFileRoutes(config, broadcast, pinStore) {
       if (!newPath.startsWith(rootDir)) return res.status(403).json({ error: 'Access denied' });
       
       await fs.promises.rename(resolved, newPath);
-      
+
+      // Update upload metadata key
+      const oldRelPath = filePath;
+      const newRelPath = path.relative(rootDir, newPath);
+      renameFileMeta(oldRelPath, newRelPath);
+
       const parentPath = path.relative(rootDir, path.dirname(resolved));
       broadcast({ type: 'file-changed', action: 'renamed', path: parentPath });
       res.json({ success: true, name: safeName });

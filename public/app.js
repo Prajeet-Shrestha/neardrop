@@ -26,6 +26,14 @@
     wsReconnectDelay: 1000,
     deviceHostname: '',
     deviceOS: '',
+    deviceId: localStorage.getItem('connectlan-device-id') || (() => {
+      const id = (typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+            (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+      localStorage.setItem('connectlan-device-id', id);
+      return id;
+    })(),
     showHidden: false,
     isHost: false,
     kicked: false,
@@ -140,23 +148,42 @@
   // ─── Segmented PIN Input ────────────────────────────
   function setupPinInputs() {
     dom.pinDigits.forEach((input, i) => {
-      input.addEventListener('input', (e) => {
-        const val = e.target.value.replace(/[^0-9]/g, '');
-        e.target.value = val.slice(0, 1);
-        e.target.classList.toggle('filled', !!e.target.value);
-        if (val && i < 5) dom.pinDigits[i + 1].focus();
-        // Auto-submit when all 6 digits are entered
+
+      // Primary handler: input event fires after value changes on all browsers
+      input.addEventListener('input', () => {
+        const val = input.value.replace(/[^0-9]/g, '');
+        if (!val) { input.value = ''; input.classList.remove('filled'); return; }
+        // Keep first digit in this box
+        input.value = val[0];
+        input.classList.add('filled');
+        // Forward overflow digits to subsequent boxes
+        for (let j = 1; j < val.length && (i + j) < 6; j++) {
+          dom.pinDigits[i + j].value = val[j];
+          dom.pinDigits[i + j].classList.add('filled');
+        }
+        const next = Math.min(i + val.length, 5);
+        dom.pinDigits[next].focus();
         if (getPin().length === 6) dom.loginForm.requestSubmit();
       });
+
+      // Backspace + arrow keys (these don't trigger input event)
       input.addEventListener('keydown', (e) => {
-        if (e.key === 'Backspace' && !e.target.value && i > 0) {
-          dom.pinDigits[i - 1].value = '';
-          dom.pinDigits[i - 1].classList.remove('filled');
+        if (e.key === 'Backspace') {
+          if (input.value) {
+            // Let the browser clear it, input event will handle state
+          } else if (i > 0) {
+            e.preventDefault();
+            dom.pinDigits[i - 1].value = '';
+            dom.pinDigits[i - 1].classList.remove('filled');
+            dom.pinDigits[i - 1].focus();
+          }
+        } else if (e.key === 'ArrowLeft' && i > 0) {
           dom.pinDigits[i - 1].focus();
+        } else if (e.key === 'ArrowRight' && i < 5) {
+          dom.pinDigits[i + 1].focus();
         }
-        if (e.key === 'ArrowLeft' && i > 0) dom.pinDigits[i - 1].focus();
-        if (e.key === 'ArrowRight' && i < 5) dom.pinDigits[i + 1].focus();
       });
+
       input.addEventListener('paste', (e) => {
         e.preventDefault();
         const text = (e.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').slice(0, 6);
@@ -249,6 +276,7 @@
         type: 'register-device',
         hostname: state.deviceHostname,
         os: state.deviceOS,
+        deviceId: state.deviceId,
         userAgent: navigator.userAgent,
       }));
       // Load chat history
@@ -430,15 +458,18 @@
   }
 
   function renderIconView() {
-    dom.iconGrid.innerHTML = state.files.map((f, i) => `
-      <div class="file-item ${state.selectedFiles.has(i) ? 'selected' : ''}" data-index="${i}" data-path="${esc(f.path)}" data-is-dir="${f.isDirectory}">
+    dom.iconGrid.innerHTML = state.files.map((f, i) => {
+      const uploaderTooltip = f.uploadedBy ? `Uploaded by ${f.uploadedBy} (${f.uploaderIp})\n${formatDate(f.uploadedAt)}` : '';
+      return `
+      <div class="file-item ${state.selectedFiles.has(i) ? 'selected' : ''}" data-index="${i}" data-path="${esc(f.path)}" data-is-dir="${f.isDirectory}" ${uploaderTooltip ? `title="${esc(uploaderTooltip)}"` : ''}>
         <div class="file-icon-wrap">
           ${f.isDirectory ? renderFolderIcon() : renderFileIcon(f)}
         </div>
         <div class="file-name">${esc(f.name)}</div>
         ${f.sizeFormatted ? `<div class="file-meta">${esc(f.sizeFormatted)}</div>` : ''}
+        ${f.uploadedBy ? `<div class="file-uploader">${esc(f.uploadedBy)}</div>` : ''}
       </div>
-    `).join('');
+    `}).join('');
     
     bindFileEvents(dom.iconGrid.querySelectorAll('.file-item'));
     // Handle thumbnail errors via delegation (CSP-safe)
@@ -448,7 +479,9 @@
   }
 
   function renderListView() {
-    dom.listBody.innerHTML = state.files.map((f, i) => `
+    dom.listBody.innerHTML = state.files.map((f, i) => {
+      const uploaderTooltip = f.uploadedBy ? `${f.uploadedBy} (${f.uploaderIp}) • ${formatDate(f.uploadedAt)}` : '';
+      return `
       <div class="list-row ${state.selectedFiles.has(i) ? 'selected' : ''}" data-index="${i}" data-path="${esc(f.path)}" data-is-dir="${f.isDirectory}">
         <div class="list-col col-name">
           ${f.isDirectory 
@@ -460,8 +493,9 @@
         <div class="list-col col-date">${formatDate(f.modified)}</div>
         <div class="list-col col-size">${f.isDirectory ? '--' : esc(f.sizeFormatted)}</div>
         <div class="list-col col-kind">${esc(f.kind)}</div>
+        <div class="list-col col-uploader" title="${esc(uploaderTooltip)}">${f.uploadedBy ? esc(f.uploadedBy) : '–'}</div>
       </div>
-    `).join('');
+    `}).join('');
     
     bindFileEvents(dom.listBody.querySelectorAll('.list-row'));
   }
@@ -1130,7 +1164,7 @@
 
   function getDeviceIcon(osStr) {
     const os = (osStr || '').toLowerCase();
-    const s = (d) => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px">${d}</svg>`;
+    const s = (d) => `<svg class="inline-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
     if (os.includes('mac') || os.includes('darwin')) return s('<path d="M12 2C9.24 2 8 4.09 8 6c0 1.38.56 2.63 1.46 3.54C8.56 10.37 8 11.62 8 13c0 2.76 1.79 5 4 5s4-2.24 4-5c0-1.38-.56-2.63-1.46-3.54C15.44 8.63 16 7.38 16 6c0-1.91-1.24-4-4-4z" fill="currentColor" stroke="none"/>');
     if (os.includes('linux')) return s('<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/>');
     if (os.includes('windows')) return s('<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/>');

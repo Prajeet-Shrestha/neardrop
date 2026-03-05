@@ -1,5 +1,7 @@
 // Chat & WebSocket handler
 const os = require('os');
+const fs = require('fs');
+const path = require('path');
 const { sessions, isLocalhostSocket, parseCookie } = require('./auth');
 
 const chatHistory = []; // Last 100 messages
@@ -37,6 +39,7 @@ function setupWebSocket(wss, validateAuth) {
       ip,
       socketIp,
       sessionToken,
+      deviceId: null,
       isHost: isLocalhostSocket(socketIp),
       userAgent: req.headers['user-agent'] || '',
     });
@@ -59,7 +62,7 @@ function setupWebSocket(wss, validateAuth) {
         if (remainingFromIp === 0) {
           broadcastToAll(wss, {
             type: 'device-left',
-            device: { hostname: device.hostname, os: device.os, ip: device.ip },
+            device: { hostname: device.hostname, os: device.os, ip: device.ip, deviceId: device.deviceId },
           }, ws);
         }
       }
@@ -78,8 +81,14 @@ function handleMessage(ws, msg, wss) {
       if (device) {
         device.hostname = escapeHtml(msg.hostname || os.hostname());
         device.os = escapeHtml(msg.os || process.platform);
+        device.deviceId = msg.deviceId || null;
         device.userAgent = msg.userAgent || '';
         
+        // Update persistent device registry
+        if (device.deviceId) {
+          updateDeviceRegistry(device);
+        }
+
         // Send current connected devices to the new client (deduplicated)
         const devices = getDeviceList();
         ws.send(JSON.stringify({ type: 'device-list', devices }));
@@ -89,7 +98,7 @@ function handleMessage(ws, msg, wss) {
         if (connectionsFromIp === 1) {
           broadcastToAll(wss, {
             type: 'device-joined',
-            device: { hostname: device.hostname, os: device.os, ip: device.ip, isHost: device.isHost },
+            device: { hostname: device.hostname, os: device.os, ip: device.ip, isHost: device.isHost, deviceId: device.deviceId },
           }, ws);
         }
       }
@@ -197,6 +206,7 @@ function getDeviceList() {
         hostname: device.hostname,
         os: device.os,
         ip: device.ip,
+        deviceId: device.deviceId,
         isHost: device.isHost,
       });
     }
@@ -215,9 +225,62 @@ function createBroadcaster(wss) {
   };
 }
 
+// Look up a connected device by IP
+function getDeviceByIp(ip) {
+  for (const [, device] of connectedDevices) {
+    if (device.ip === ip) {
+      return { hostname: device.hostname, os: device.os, ip: device.ip, deviceId: device.deviceId };
+    }
+  }
+  return null;
+}
+
+// ─── Persistent Device Registry ──────────────────────
+let registryPath = null;
+
+function setRegistryPath(sharedDir) {
+  registryPath = path.join(sharedDir, '.connectlan-devices.json');
+}
+
+function loadDeviceRegistry() {
+  try {
+    if (registryPath && fs.existsSync(registryPath)) {
+      return JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    }
+  } catch (e) { /* corrupt, start fresh */ }
+  return {};
+}
+
+function saveDeviceRegistry(registry) {
+  if (!registryPath) return;
+  try {
+    fs.writeFileSync(registryPath, JSON.stringify(registry, null, 2), 'utf8');
+  } catch (e) {
+    console.error('Failed to save device registry:', e.message);
+  }
+}
+
+function updateDeviceRegistry(device) {
+  const registry = loadDeviceRegistry();
+  const existing = registry[device.deviceId];
+  const now = new Date().toISOString();
+  registry[device.deviceId] = {
+    hostname: device.hostname,
+    os: device.os,
+    ip: device.ip,
+    firstSeen: existing ? existing.firstSeen : now,
+    lastSeen: now,
+    connectionCount: existing ? (existing.connectionCount || 0) + 1 : 1,
+  };
+  saveDeviceRegistry(registry);
+}
+
 module.exports = {
   setupWebSocket,
   getChatHistory,
   getDeviceList,
+  getDeviceByIp,
+  setRegistryPath,
+  loadDeviceRegistry,
   createBroadcaster,
 };

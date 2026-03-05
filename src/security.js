@@ -39,7 +39,7 @@ function securityHeaders(req, res, next) {
   res.setHeader('Content-Security-Policy', 
     "default-src 'self'; " +
     "script-src 'self'; " +
-    "style-src 'self' https://fonts.googleapis.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
     "font-src 'self' https://fonts.gstatic.com; " +
     "img-src 'self' data: blob:; " +
     "connect-src 'self' wss: ws:; " +
@@ -52,16 +52,10 @@ function securityHeaders(req, res, next) {
   next();
 }
 
-// CORS middleware - same origin only
+// CORS middleware - permissive for LAN usage (PIN auth protects access)
 function corsMiddleware(req, res, next) {
   const origin = req.headers.origin;
-  // Only allow same-origin requests (no origin header = same origin)
   if (origin) {
-    const host = req.headers.host;
-    const requestOrigin = new URL(origin);
-    if (requestOrigin.host !== host) {
-      return res.status(403).json({ error: 'Cross-origin requests not allowed' });
-    }
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Credentials', 'true');
   }
