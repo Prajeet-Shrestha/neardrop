@@ -37,6 +37,7 @@
     showHidden: false,
     isHost: false,
     kicked: false,
+    filterDeviceId: null,
   };
 
   // ─── DOM References ─────────────────────────────────
@@ -64,6 +65,7 @@
     // Sidebar
     sidebar: $('#sidebar'),
     sidebarHome: $('#sidebar-home'),
+    sidebarThisDevice: $('#sidebar-this-device'),
     sidebarChat: $('#sidebar-chat'),
     chatBadge: $('#chat-badge'),
     thisDeviceName: $('#this-device-name'),
@@ -374,6 +376,18 @@
       const data = await res.json();
       state.currentPath = data.path;
       state.files = sortFiles(data.files);
+      
+      // Apply device filter if active
+      if (state.filterDeviceId) {
+        state.files = state.files.filter(f => {
+          if (state.filterDeviceId === state.deviceId) {
+            // "This Device" filter: include files with matching deviceId OR null (pre-existing host files)
+            return f.deviceId === state.filterDeviceId || f.deviceId === null;
+          }
+          return f.deviceId === state.filterDeviceId;
+        });
+      }
+      
       state.selectedFiles.clear();
       
       renderBreadcrumb();
@@ -440,7 +454,8 @@
     });
     
     // Update sidebar active state
-    dom.sidebarHome.classList.toggle('active', state.currentPath === '');
+    dom.sidebarHome.classList.toggle('active', !state.filterDeviceId);
+    dom.sidebarThisDevice.classList.toggle('active', state.filterDeviceId === state.deviceId);
   }
 
   function renderFiles() {
@@ -454,7 +469,15 @@
       renderListView();
     }
     
-    dom.emptyState.classList.toggle('hidden', state.files.length > 0);
+    const isEmpty = state.files.length === 0;
+    dom.emptyState.classList.toggle('hidden', !isEmpty);
+    if (isEmpty && state.filterDeviceId) {
+      dom.emptyState.querySelector('.empty-title').textContent = 'No files from this device';
+      dom.emptyState.querySelector('.empty-text').textContent = 'Files uploaded or created by this device will appear here';
+    } else if (isEmpty) {
+      dom.emptyState.querySelector('.empty-title').textContent = 'No files yet';
+      dom.emptyState.querySelector('.empty-text').textContent = 'Drag & drop files here or use the upload button';
+    }
   }
 
   function renderIconView() {
@@ -723,6 +746,10 @@
         hideProgress();
         if (xhr.status === 200) {
           showToast('success', `${files.length} file(s) uploaded`);
+          // Auto-clear filter if viewing another device's files
+          if (state.filterDeviceId && state.filterDeviceId !== state.deviceId) {
+            state.filterDeviceId = null;
+          }
           loadFiles(state.currentPath);
         } else {
           const data = JSON.parse(xhr.responseText);
@@ -755,6 +782,10 @@
       const data = await res.json();
       if (res.ok) {
         showToast('success', `Created "${data.name}"`);
+        // Auto-clear filter if viewing another device's files
+        if (state.filterDeviceId && state.filterDeviceId !== state.deviceId) {
+          state.filterDeviceId = null;
+        }
         loadFiles(state.currentPath);
       } else {
         showToast('error', data.error || 'Failed to create folder');
@@ -891,7 +922,15 @@
       loadFiles(state.history[state.historyIndex]);
     }
   });
-  dom.sidebarHome.addEventListener('click', () => navigate(''));
+  dom.sidebarHome.addEventListener('click', () => {
+    state.filterDeviceId = null;
+    navigate('');
+  });
+  dom.sidebarThisDevice.addEventListener('click', () => {
+    if (state.filterDeviceId === state.deviceId) return; // Already active
+    state.filterDeviceId = state.deviceId;
+    navigate('');
+  });
 
   function updateNavButtons() {
     dom.btnBack.disabled = state.historyIndex <= 0;
@@ -939,6 +978,15 @@
       if (!res.ok) return;
       const data = await res.json();
       state.files = data.results;
+      // Apply device filter to search results
+      if (state.filterDeviceId) {
+        state.files = state.files.filter(f => {
+          if (state.filterDeviceId === state.deviceId) {
+            return f.deviceId === state.filterDeviceId || f.deviceId === null;
+          }
+          return f.deviceId === state.filterDeviceId;
+        });
+      }
       state.selectedFiles.clear();
       renderFiles();
       dom.statusCount.textContent = `${state.files.length} result${state.files.length !== 1 ? 's' : ''}`;
@@ -1121,12 +1169,23 @@
   function renderDevices() {
     const removeIcon = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>';
     dom.connectedDevices.innerHTML = state.devices.map(d => `
-      <div class="sidebar-item device-item">
+      <div class="sidebar-item device-item${state.filterDeviceId === d.deviceId ? ' active' : ''}" data-device-id="${esc(d.deviceId || '')}">
         <span class="sidebar-icon">${getDeviceIcon(d.os)}</span>
         <span>${d.hostname}</span>
         ${state.isHost && !d.isHost ? `<button class="device-remove-btn" data-ip="${esc(d.ip)}" data-hostname="${esc(d.hostname)}" title="Remove device">${removeIcon}</button>` : ''}
       </div>
     `).join('');
+    
+    // Bind device click events for filtering
+    dom.connectedDevices.querySelectorAll('.device-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        if (e.target.closest('.device-remove-btn')) return; // Don't filter when clicking remove
+        const deviceId = item.dataset.deviceId;
+        if (!deviceId || state.filterDeviceId === deviceId) return; // Already active or no deviceId
+        state.filterDeviceId = deviceId;
+        navigate('');
+      });
+    });
     
     // Bind remove button events
     if (state.isHost) {
@@ -1225,7 +1284,8 @@
   // ─── Status Bar ─────────────────────────────────────
   function updateStatusBar() {
     const count = state.files.length;
-    dom.statusCount.textContent = `${count} item${count !== 1 ? 's' : ''}`;
+    const suffix = state.filterDeviceId ? ' · filtered' : '';
+    dom.statusCount.textContent = `${count} item${count !== 1 ? 's' : ''}${suffix}`;
   }
 
   // ─── Hamburger (Mobile) ─────────────────────────────
