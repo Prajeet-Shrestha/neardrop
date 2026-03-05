@@ -2,6 +2,36 @@
    ConnectLAN — macOS Finder Dark Mode Theme
    ===================================================== */
 
+/* Local Inter Font */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('/font/Inter-Light-BETA.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/font/Inter-Regular.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/font/Inter-Medium.otf') format('opentype');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/font/Inter-SemiBold.otf') format('opentype');
+}
+
 /* Design Tokens */
 :root {
   --bg-window: #1e1e1e;
