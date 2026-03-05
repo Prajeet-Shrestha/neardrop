@@ -100,6 +100,7 @@
     progressTitle: $('#progress-title'),
     progressList: $('#progress-list'),
     toastContainer: $('#toast-container'),
+    downloadContainer: $('#download-progress-container'),
     reconnectBanner: $('#reconnect-banner'),
     // Connect Device
     btnConnectDevice: $('#btn-connect-device'),
@@ -706,45 +707,140 @@
   });
 
   // ─── File Operations ────────────────────────────────
+  // Active downloads map: path -> { controller, completed, cardId }
+  const activeDownloads = new Map();
+  let downloadIdCounter = 0;
+
   async function downloadFile(filePath) {
-    try {
-      showToast('info', 'Starting download...');
-      const res = await fetch(`/api/download?path=${encodeURIComponent(filePath)}`);
-      if (!res.ok) { showToast('error', 'Download failed'); return; }
-      
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filePath.split('/').pop();
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('success', 'Download complete');
-    } catch (e) {
-      showToast('error', 'Download failed');
-    }
+    // Duplicate guard
+    if (activeDownloads.has(filePath)) return;
+    await streamDownload(filePath, `/api/download?path=${encodeURIComponent(filePath)}`, filePath.split('/').pop());
   }
 
   async function downloadFolder(filePath) {
+    const key = filePath + '::zip';
+    if (activeDownloads.has(key)) return;
+    await streamDownload(key, `/api/download-folder?path=${encodeURIComponent(filePath)}`, filePath.split('/').pop() + '.zip');
+  }
+
+  async function streamDownload(downloadKey, url, filename) {
+    const cardId = 'dl-' + (++downloadIdCounter);
+    const controller = new AbortController();
+    const entry = { controller, completed: false, cardId };
+    activeDownloads.set(downloadKey, entry);
+
+    // Delay showing card: skip for tiny files that finish in <300ms
+    let cardVisible = false;
+    const cardTimer = setTimeout(() => {
+      if (!entry.completed) {
+        createDownloadCard(cardId, filename, entry);
+        cardVisible = true;
+      }
+    }, 300);
+
     try {
-      showToast('info', 'Preparing ZIP download...');
-      const res = await fetch(`/api/download-folder?path=${encodeURIComponent(filePath)}`);
-      if (!res.ok) { showToast('error', 'Download failed'); return; }
-      
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) {
+        clearTimeout(cardTimer);
+        entry.completed = true;
+        activeDownloads.delete(downloadKey);
+        if (cardVisible) removeDownloadCard(cardId);
+        showToast('error', 'Download failed');
+        return;
+      }
+
+      const contentLength = res.headers.get('Content-Length');
+      const total = contentLength ? parseInt(contentLength, 10) : 0;
+
+      // Try streaming with ReadableStream; fallback to blob() for old browsers
+      let blob;
+      if (res.body && typeof res.body.getReader === 'function') {
+        const reader = res.body.getReader();
+        const chunks = [];
+        let loaded = 0;
+        const startTime = performance.now();
+        let lastUpdateTime = 0;
+        const speedSamples = [];
+        let lastSampleLoaded = 0;
+        let lastSampleTime = startTime;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          loaded += value.length;
+
+          // Speed sampling every ~500ms
+          const now = performance.now();
+          if (now - lastSampleTime >= 500) {
+            const dt = (now - lastSampleTime) / 1000;
+            const db = loaded - lastSampleLoaded;
+            speedSamples.push(db / dt);
+            if (speedSamples.length > 6) speedSamples.shift(); // ~3s rolling window
+            lastSampleLoaded = loaded;
+            lastSampleTime = now;
+          }
+
+          // Throttle UI updates to ~60fps
+          if (cardVisible && now - lastUpdateTime >= 100) {
+            lastUpdateTime = now;
+            const avgSpeed = speedSamples.length > 0
+              ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length : 0;
+            updateDownloadCard(cardId, loaded, total, avgSpeed);
+          }
+        }
+        blob = new Blob(chunks);
+      } else {
+        // Fallback: no ReadableStream support — show indeterminate
+        if (!cardVisible) {
+          clearTimeout(cardTimer);
+          createDownloadCard(cardId, filename, entry);
+          cardVisible = true;
+        }
+        updateDownloadCard(cardId, 0, 0, 0); // indeterminate
+        blob = await res.blob();
+      }
+
+      // Guard: check if cancelled during streaming
+      if (entry.completed) return;
+      entry.completed = true;
+      activeDownloads.delete(downloadKey);
+      clearTimeout(cardTimer);
+
+      // Trigger browser download
+      const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url;
-      a.download = filePath.split('/').pop() + '.zip';
+      a.href = blobUrl;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('success', 'Folder downloaded');
+      URL.revokeObjectURL(blobUrl);
+
+      if (cardVisible) {
+        // Show 100% briefly then remove
+        updateDownloadCard(cardId, 1, 1, 0);
+        removeDownloadCard(cardId, 800);
+      }
     } catch (e) {
-      showToast('error', 'Download failed');
+      clearTimeout(cardTimer);
+      if (entry.completed) return; // cancelled, already cleaned up
+      entry.completed = true;
+      activeDownloads.delete(downloadKey);
+
+      if (e.name === 'AbortError') {
+        // User cancelled
+        if (cardVisible) removeDownloadCard(cardId);
+        showToast('info', 'Download cancelled');
+      } else {
+        // Network error or other failure
+        if (cardVisible) {
+          showDownloadCardError(cardId, 'Download failed');
+          removeDownloadCard(cardId, 3000);
+        } else {
+          showToast('error', 'Download failed');
+        }
+      }
     }
   }
 
@@ -1319,6 +1415,83 @@
 
   function hideProgress() {
     dom.progressOverlay.classList.add('hidden');
+  }
+
+  // ─── Download Progress Cards ──────────────────────────
+  function createDownloadCard(id, filename, entry) {
+    const card = document.createElement('div');
+    card.className = 'download-card';
+    card.id = id;
+    card.innerHTML = `
+      <div class="dl-card-header">
+        <svg class="dl-card-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2v8M4 6l4 4 4-4"/><path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2"/>
+        </svg>
+        <div class="dl-card-filename" title="${esc(filename)}">${esc(filename)}</div>
+        <button class="dl-card-cancel" title="Cancel">
+          <svg width="12" height="12" viewBox="0 0 12 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="2" x2="10" y2="10"/><line x1="10" y1="2" x2="2" y2="10"/></svg>
+        </button>
+      </div>
+      <div class="dl-card-bar"><div class="dl-card-bar-fill" id="${id}-fill"></div></div>
+      <div class="dl-card-info">
+        <span class="dl-card-info-left" id="${id}-info">Starting...</span>
+        <span class="dl-card-info-right" id="${id}-speed"></span>
+      </div>
+    `;
+    // Cancel handler
+    card.querySelector('.dl-card-cancel').addEventListener('click', () => {
+      if (!entry.completed) {
+        entry.completed = true;
+        entry.controller.abort();
+      }
+    });
+    dom.downloadContainer.appendChild(card);
+  }
+
+  function updateDownloadCard(id, loaded, total, speed) {
+    const fill = $(`#${id}-fill`);
+    const info = $(`#${id}-info`);
+    const speedEl = $(`#${id}-speed`);
+    if (!fill) return;
+
+    if (total > 0) {
+      const pct = Math.min(Math.round((loaded / total) * 100), 100);
+      fill.classList.remove('indeterminate');
+      fill.style.width = pct + '%';
+      if (info) info.textContent = `${formatDlBytes(loaded)} / ${formatDlBytes(total)} — ${pct}%`;
+    } else {
+      // Indeterminate (folder ZIP or unknown size)
+      fill.classList.add('indeterminate');
+      fill.style.width = '';
+      if (info && loaded > 0) info.textContent = `${formatDlBytes(loaded)} downloaded`;
+    }
+    if (speedEl && speed > 0) speedEl.textContent = `${formatDlBytes(speed)}/s`;
+    else if (speedEl) speedEl.textContent = '';
+  }
+
+  function showDownloadCardError(id, message) {
+    const info = $(`#${id}-info`);
+    const speedEl = $(`#${id}-speed`);
+    const fill = $(`#${id}-fill`);
+    if (info) { info.textContent = message; info.classList.add('dl-card-error'); }
+    if (speedEl) speedEl.textContent = '';
+    if (fill) { fill.classList.remove('indeterminate'); fill.style.width = '0%'; fill.style.background = 'var(--red)'; }
+  }
+
+  function removeDownloadCard(id, delay = 0) {
+    setTimeout(() => {
+      const card = $(`#${id}`);
+      if (!card) return;
+      card.classList.add('removing');
+      setTimeout(() => card.remove(), 300);
+    }, delay);
+  }
+
+  function formatDlBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
   }
 
   // ─── Toast Notifications ────────────────────────────

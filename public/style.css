@@ -646,6 +646,100 @@ html, body {
 .progress-info { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
 
 /* =====================================================
+   DOWNLOAD PROGRESS PANEL (macOS Finder-style)
+   ===================================================== */
+.download-progress-container {
+  position: fixed; bottom: 48px; right: 20px; z-index: 650;
+  display: flex; flex-direction: column-reverse; gap: 6px;
+  max-height: 60vh; overflow-y: auto; overflow-x: hidden;
+  pointer-events: none;
+}
+.download-card {
+  pointer-events: auto;
+  background: rgba(45,45,45,0.92);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--divider);
+  border-radius: 10px;
+  padding: 10px 12px;
+  width: 320px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  animation: dlCardIn 0.25s ease;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.download-card.removing {
+  animation: dlCardOut 0.3s ease forwards;
+}
+@keyframes dlCardIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes dlCardOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+.dl-card-header {
+  display: flex; align-items: center; gap: 8px;
+}
+.dl-card-icon {
+  flex-shrink: 0; color: var(--accent); opacity: 0.8;
+  width: 16px; height: 16px;
+}
+.dl-card-filename {
+  flex: 1; font-size: 12px; font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  direction: ltr;
+}
+.dl-card-cancel {
+  flex-shrink: 0; background: none; border: none;
+  color: var(--text-tertiary); cursor: pointer;
+  padding: 2px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; line-height: 1;
+}
+.dl-card-cancel:hover { color: var(--text-primary); background: var(--bg-hover); }
+.dl-card-bar {
+  width: 100%; height: 4px;
+  background: var(--bg-hover); border-radius: 2px; overflow: hidden;
+}
+.dl-card-bar-fill {
+  height: 100%; background: var(--accent);
+  border-radius: 2px; transition: width 0.15s ease;
+  width: 0%;
+}
+.dl-card-bar-fill.indeterminate {
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%, var(--accent) 30%,
+    var(--accent) 70%, transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: dlIndeterminate 1.5s ease-in-out infinite;
+}
+@keyframes dlIndeterminate {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.dl-card-info {
+  font-size: 10px; color: var(--text-secondary);
+  display: flex; justify-content: space-between;
+}
+.dl-card-info-left { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-card-info-right { flex-shrink: 0; margin-left: 8px; }
+.dl-card-error {
+  font-size: 10px; color: var(--red); font-weight: 500;
+}
+
+/* Mobile download panel */
+@media (max-width: 768px) {
+  .download-progress-container {
+    left: 12px; right: 12px; bottom: 32px;
+  }
+  .download-card { width: 100%; }
+}
+
+/* =====================================================
    TOAST NOTIFICATIONS
    ===================================================== */
 .toast-container {
