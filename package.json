@@ -17,7 +17,10 @@
     "build:mac-arm64": "pkg . --target node22-macos-arm64 --out-path dist",
     "build:mac-x64": "pkg . --target node22-macos-x64 --out-path dist",
     "build:win": "pkg . --target node22-win-x64 --out-path dist",
-    "build:linux": "pkg . --target node22-linux-x64 --out-path dist"
+    "build:linux": "pkg . --target node22-linux-x64 --out-path dist",
+    "release:patch": "npm version patch -m 'release: v%s' && npm run electron:build:all -- --publish always && git push && git push --tags",
+    "release:minor": "npm version minor -m 'release: v%s' && npm run electron:build:all -- --publish always && git push && git push --tags",
+    "release:major": "npm version major -m 'release: v%s' && npm run electron:build:all -- --publish always && git push && git push --tags"
   },
   "build": {
     "appId": "com.neardrop.app",
@@ -42,16 +45,24 @@
     ],
     "asar": true,
     "mac": {
-      "target": ["dmg"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "build/icon.png",
       "category": "public.app-category.utilities"
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "icon": "build/icon.ico"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "build/icon.png",
       "category": "Utility"
     },
@@ -59,6 +70,11 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Prajeet-Shrestha",
+      "repo": "neardrop"
     }
   },
   "pkg": {
@@ -81,6 +97,7 @@
   "license": "MIT",
   "dependencies": {
     "archiver": "^7.0.1",
+    "electron-updater": "^6.8.3",
     "express": "^4.21.2",
     "mime-types": "^2.1.35",
     "multer": "^1.4.5-lts.1",

@@ -27,7 +27,7 @@ function generateSessionToken() {
 function createAuthMiddleware(pinStore) {
   return (req, res, next) => {
     // Skip auth for auth endpoints and static files
-    if (req.path === '/api/auth' || !req.path.startsWith('/api/')) {
+    if (req.path === '/api/auth' || req.path === '/api/version' || !req.path.startsWith('/api/')) {
       return next();
     }
     

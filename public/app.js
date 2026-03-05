@@ -86,8 +86,9 @@
     chatPaste: $('#chat-paste'),
     chatClose: $('#chat-close'),
     // Status
-    statusCount: $('#status-count'),
-    statusSpace: $('#status-space'),
+    statusCenter: $('#status-center'),
+    statusVersion: $('#status-version'),
+    loginVersion: $('#login-version'),
     // Overlays
     contextMenu: $('#context-menu'),
     dialogOverlay: $('#dialog-overlay'),
@@ -150,6 +151,15 @@
         showApp(info);
       }
     } catch (e) { /* not authenticated */ }
+
+    // Fetch version for login page (no auth required)
+    try {
+      const res = await fetch('/api/version');
+      if (res.ok) {
+        const data = await res.json();
+        if (dom.loginVersion) dom.loginVersion.textContent = 'v' + data.version;
+      }
+    } catch (e) { /* version fetch failed, non-critical */ }
   }
 
   function detectDevice() {
@@ -267,7 +277,8 @@
     dom.loginPage.classList.add('hidden');
     dom.app.classList.remove('hidden');
     dom.thisDeviceName.textContent = info.hostname || 'This Device';
-    dom.statusSpace.textContent = `${info.disk.free} available`;
+    state.diskFree = info.disk.free;
+    if (info.version && dom.statusVersion) dom.statusVersion.textContent = 'v' + info.version;
     
     // Hide folder upload on iOS
     if (/iPhone|iPad/.test(navigator.userAgent)) {
@@ -604,6 +615,7 @@
     
     state.lastSelectedIndex = idx;
     updateSelectionUI();
+    updateStatusBar();
   }
 
   function handleFileDoubleClick(item) {
@@ -1030,7 +1042,7 @@
       }
       state.selectedFiles.clear();
       renderFiles();
-      dom.statusCount.textContent = `${state.files.length} result${state.files.length !== 1 ? 's' : ''}`;
+      dom.statusCenter.textContent = `${state.files.length} result${state.files.length !== 1 ? 's' : ''}`;
     } catch (e) { /* ignore */ }
   }
 
@@ -1324,9 +1336,15 @@
 
   // ─── Status Bar ─────────────────────────────────────
   function updateStatusBar() {
-    const count = state.files.length;
+    const total = state.files.length;
+    const selected = state.selectedFiles.size;
     const suffix = state.filterDeviceId ? ' · filtered' : '';
-    dom.statusCount.textContent = `${count} item${count !== 1 ? 's' : ''}${suffix}`;
+    const diskPart = state.diskFree ? `, ${state.diskFree} available` : '';
+    if (selected > 0) {
+      dom.statusCenter.textContent = `${selected} of ${total} selected${diskPart}${suffix}`;
+    } else {
+      dom.statusCenter.textContent = `${total} item${total !== 1 ? 's' : ''}${diskPart}${suffix}`;
+    }
   }
 
   // ─── Hamburger (Mobile) ─────────────────────────────

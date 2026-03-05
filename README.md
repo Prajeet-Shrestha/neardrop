@@ -15,22 +15,35 @@ A **Finder-inspired LAN file transfer** app — share files, folders, and messag
 - **TLS encryption** — auto-generates a self-signed certificate for HTTPS
 - **Mobile responsive** — works on phones, tablets, and desktops
 - **Security** — CSP headers, rate limiting, path traversal protection, CORS enforcement, optional IP allowlist
+- **Auto-update** — Electron app checks GitHub Releases for updates
 
-## Quick Start
+## Install
+
+### One-liner (macOS / Linux)
 
 ```bash
-# Clone
-git clone https://github.com/Prajeet-Shrestha/connect-lan.git
-cd connect-lan
+curl -fsSL https://raw.githubusercontent.com/Prajeet-Shrestha/neardrop/main/install.sh | bash
+```
 
-# Install
+### Desktop App
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/Prajeet-Shrestha/neardrop/releases/latest):
+
+| Platform | File |
+|----------|------|
+| macOS | `NearDrop-x.x.x.dmg` |
+| Windows | `NearDrop Setup x.x.x.exe` |
+| Linux | `NearDrop-x.x.x.AppImage` |
+
+### From Source
+
+```bash
+git clone https://github.com/Prajeet-Shrestha/neardrop.git
+cd neardrop
+
 npm install
-
-# Run (HTTPS — recommended)
-npm start
-
-# Run (HTTP — no TLS)
-npm run dev
+npm start        # HTTPS (recommended)
+npm run dev      # HTTP (no TLS)
 ```
 
 The terminal will display:
@@ -86,12 +99,16 @@ node server.js --allow-ip 192.168.0.50
 │   ├── index.html     # Single-page app (Finder-style UI)
 │   ├── style.css      # Dark mode macOS-inspired styles
 │   └── app.js         # Client-side logic (file browser, chat, uploads)
-└── src/
-    ├── auth.js        # PIN authentication, session cookies
-    ├── chat.js        # WebSocket handler, device registry, chat history
-    ├── files.js       # File API routes (browse, upload, download, rename, delete)
-    ├── security.js    # CSP, CORS, rate limiter, path sanitization, IP allowlist
-    └── utils.js       # CLI parser, network utils, file type detection
+├── src/
+│   ├── auth.js        # PIN authentication, session cookies
+│   ├── chat.js        # WebSocket handler, device registry, chat history
+│   ├── files.js       # File API routes (browse, upload, download, rename, delete)
+│   ├── security.js    # CSP, CORS, rate limiter, path sanitization, IP allowlist
+│   └── utils.js       # CLI parser, network utils, file type detection
+└── electron/
+    ├── main.js        # Electron main process
+    ├── preload.js     # Context bridge
+    └── updater.js     # Auto-update via GitHub Releases
 ```
 
 ## Requirements
@@ -148,6 +165,27 @@ Binaries are output to the `dist/` folder (~65 MB each).
 
 > **Note:** The first build downloads the Node.js base binary for each target platform (~40 MB each). These are cached in `~/.pkg-cache/` for subsequent builds.
 
+## Releasing
+
+Releases are published to [GitHub Releases](https://github.com/Prajeet-Shrestha/neardrop/releases) with `electron-builder`.
+
+```bash
+# Set your GitHub token (required for publishing)
+export GH_TOKEN=ghp_xxxx
+
+# Bump version, build, publish to GitHub Releases, push
+npm run release:patch   # 1.0.0 → 1.0.1
+npm run release:minor   # 1.0.0 → 1.1.0
+npm run release:major   # 1.0.0 → 2.0.0
+```
+
+Each command: bumps `package.json` → commits → tags → builds all platforms → creates a GitHub Release → uploads installers → pushes to origin.
+
+## Auto-Update
+
+The Electron desktop app automatically checks for updates from GitHub Releases on startup. When a new version is available, it downloads in the background and prompts the user to restart. You can also manually check via **NearDrop → Check for Updates…** in the menu bar.
+
 ## License
 
 MIT
+

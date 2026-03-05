@@ -7,6 +7,7 @@ const fs = require('fs');
 const mime = require('mime-types');
 const { safePath, checkSymlinkJail, sanitizeFilename } = require('./security');
 const { formatBytes, getFileKind, getFileIconType, isImageFile, generateConflictFreeName, getDiskSpace } = require('./utils');
+const { version } = require('../package.json');
 
 function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDeviceRegistry) {
   const router = express.Router();
@@ -100,6 +101,11 @@ function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDevice
     limits: { fileSize: maxUploadSize }
   });
   
+  // GET /api/version (public — no auth required)
+  router.get('/version', (req, res) => {
+    res.json({ version });
+  });
+
   // GET /api/info
   router.get('/info', (req, res) => {
     const os = require('os');
@@ -107,6 +113,7 @@ function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDevice
     const { isLocalhostSocket } = require('./auth');
     const disk = getDiskSpace(rootDir);
     res.json({
+      version,
       hostname: os.hostname(),
       os: `${os.type()} ${os.release()}`,
       platform: os.platform(),

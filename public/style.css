@@ -120,6 +120,7 @@ html, body {
 }
 .login-btn:hover { background: var(--accent-hover); }
 .login-hint { color: var(--text-tertiary); font-size: 11px; margin-top: 20px; line-height: 1.4; }
+.login-version { display: block; color: rgba(255,255,255,0.25); font-size: 11px; margin-top: 16px; letter-spacing: 0.3px; }
 .device-name-group { margin-bottom: 16px; }
 .device-name-input {
   width: 100%; padding: 10px 14px; font-size: 14px;
@@ -544,10 +545,12 @@ html, body {
   height: var(--statusbar-height);
   background: var(--bg-toolbar);
   border-top: 1px solid var(--divider);
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: center;
   padding: 0 16px; font-size: 11px; color: var(--text-secondary);
-  flex-shrink: 0;
+  flex-shrink: 0; position: relative;
 }
+.status-center { text-align: center; }
+.status-version { position: absolute; right: 16px; color: var(--text-tertiary); font-size: 10px; }
 
 /* =====================================================
    CONTEXT MENU

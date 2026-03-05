@@ -1,6 +1,8 @@
 const { app, BrowserWindow, Menu, Tray, dialog, shell, session, nativeImage } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const { version } = require('../package.json');
+const { initAutoUpdater, checkForUpdates } = require('./updater');
 
 // ─── State ───────────────────────────────────────────
 let mainWindow = null;
@@ -54,6 +56,7 @@ function createMenu() {
       label: app.name,
       submenu: [
         { role: 'about' },
+        { label: 'Check for Updates…', click: () => checkForUpdates() },
         { type: 'separator' },
         { role: 'hide' },
         { role: 'hideOthers' },
@@ -279,6 +282,13 @@ app.whenReady().then(async () => {
     }
   });
 
+  // Set About panel version
+  app.setAboutPanelOptions({
+    applicationName: 'NearDrop',
+    applicationVersion: version,
+    copyright: '© 2026 Prajeet Shrestha',
+  });
+
   // Create menu
   createMenu();
 
@@ -304,6 +314,9 @@ app.whenReady().then(async () => {
   // Create window and tray
   createWindow();
   createTray();
+
+  // Initialize auto-updater (only in packaged builds)
+  initAutoUpdater(mainWindow);
 
   // Auto-start on login
   if (app.isPackaged) {

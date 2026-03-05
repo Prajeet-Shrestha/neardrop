@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const selfsigned = require('selfsigned');
+const { version } = require('./package.json');
 let qrcodeTerminal;
 try { qrcodeTerminal = require('qrcode-terminal'); } catch (e) {}
 
@@ -190,7 +191,7 @@ async function startServer(overrides = {}) {
       
       console.log('');
       console.log('\x1b[1m\x1b[36m  ╔═══════════════════════════════════════════╗\x1b[0m');
-      console.log('\x1b[1m\x1b[36m  ║         🔗 NearDrop v1.0.0                ║\x1b[0m');
+      console.log(`\x1b[1m\x1b[36m  ║         🔗 NearDrop v${version}${' '.repeat(Math.max(0, 24 - version.length))}║\x1b[0m`);
       console.log('\x1b[1m\x1b[36m  ╚═══════════════════════════════════════════╝\x1b[0m');
       console.log('');
       console.log(`  \x1b[1m🔑 PIN:\x1b[0m  \x1b[33m\x1b[1m${pinStore.current}\x1b[0m`);

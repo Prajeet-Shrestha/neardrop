@@ -14,7 +14,7 @@
     <div class="login-card">
       <div class="login-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></div>
       <h1 class="login-title">NearDrop</h1>
-      <p class="login-subtitle">Enter the PIN shown on the server terminal</p>
+      <p class="login-subtitle">Enter the PIN shown on the host device</p>
       <form id="login-form" autocomplete="off">
         <div class="pin-input-group" id="pin-input-group">
           <input type="text" class="pin-digit" autocomplete="off" data-index="0">
@@ -32,6 +32,7 @@
         <button type="submit" class="login-btn">Connect</button>
       </form>
       <p class="login-hint" id="tls-hint"></p>
+      <span class="login-version" id="login-version"></span>
     </div>
   </div>
 
@@ -176,8 +177,8 @@
 
     <!-- STATUS BAR -->
     <div class="status-bar" id="status-bar">
-      <span id="status-count">0 items</span>
-      <span id="status-space"></span>
+      <span class="status-center" id="status-center">0 items</span>
+      <span class="status-version" id="status-version"></span>
     </div>
 
 
