@@ -27,6 +27,8 @@
     deviceHostname: '',
     deviceOS: '',
     showHidden: false,
+    isHost: false,
+    kicked: false,
   };
 
   // ─── DOM References ─────────────────────────────────
@@ -161,6 +163,8 @@
 
   function showApp(info) {
     state.authenticated = true;
+    state.isHost = !!info.isHost;
+    state.kicked = false;
     dom.loginPage.classList.add('hidden');
     dom.app.classList.remove('hidden');
     dom.thisDeviceName.textContent = info.hostname || 'This Device';
@@ -203,7 +207,13 @@
       } catch (err) { /* ignore */ }
     };
     
-    ws.onclose = () => {
+    ws.onclose = (e) => {
+      // If kicked by host, show login and don't reconnect
+      if (e.code === 4001 || state.kicked) {
+        state.kicked = false;
+        showLogin('Removed by host');
+        return;
+      }
       dom.reconnectBanner.classList.remove('hidden');
       clearTimeout(state.wsReconnectTimer);
       state.wsReconnectTimer = setTimeout(() => {
@@ -227,7 +237,7 @@
         showToast('info', `${msg.device.hostname} connected`);
         break;
       case 'device-left':
-        state.devices = state.devices.filter(d => d.ip !== msg.device.ip || d.hostname !== msg.device.hostname);
+        state.devices = state.devices.filter(d => d.ip !== msg.device.ip);
         renderDevices();
         break;
       case 'chat-message':
@@ -251,6 +261,21 @@
         break;
       case 'upload-progress':
         updateUploadProgress(msg);
+        break;
+      case 'kicked':
+        // Server is about to close our connection
+        state.kicked = true;
+        if (state.ws) { try { state.ws.close(); } catch(e) {} }
+        showLogin('Removed by host');
+        break;
+      case 'kick-result':
+        if (msg.success) {
+          showToast('success', `Removed ${msg.hostname}`);
+        } else if (msg.error) {
+          showToast('error', msg.error);
+        } else {
+          showToast('info', `${msg.hostname} already disconnected`);
+        }
         break;
     }
   }
@@ -277,10 +302,14 @@
     }
   }
 
-  function showLogin() {
+  function showLogin(reason) {
     state.authenticated = false;
+    state.isHost = false;
     dom.app.classList.add('hidden');
     dom.loginPage.classList.remove('hidden');
+    if (reason) {
+      showToast('info', reason);
+    }
   }
 
   function navigate(filePath) {
@@ -971,12 +1000,47 @@
 
   // ─── Devices ────────────────────────────────────────
   function renderDevices() {
+    const removeIcon = '<svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>';
     dom.connectedDevices.innerHTML = state.devices.map(d => `
-      <div class="sidebar-item">
+      <div class="sidebar-item device-item">
         <span class="sidebar-icon">${getDeviceIcon(d.os)}</span>
         <span>${d.hostname}</span>
+        ${state.isHost && !d.isHost ? `<button class="device-remove-btn" data-ip="${esc(d.ip)}" data-hostname="${esc(d.hostname)}" title="Remove device">${removeIcon}</button>` : ''}
       </div>
     `).join('');
+    
+    // Bind remove button events
+    if (state.isHost) {
+      dom.connectedDevices.querySelectorAll('.device-remove-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          confirmKickDevice(btn.dataset.ip, btn.dataset.hostname);
+        });
+      });
+    }
+  }
+
+  function confirmKickDevice(ip, hostname) {
+    dom.dialogTitle.textContent = 'Remove Device';
+    dom.dialogText.textContent = `Remove "${hostname}"? They'll need the PIN to reconnect.`;
+    dom.dialogConfirm.textContent = 'Remove';
+    dom.dialogOverlay.classList.remove('hidden');
+    
+    const handler = () => {
+      dom.dialogOverlay.classList.add('hidden');
+      dom.dialogConfirm.removeEventListener('click', handler);
+      dom.dialogConfirm.textContent = 'Delete'; // Reset
+      if (state.ws && state.ws.readyState === 1) {
+        state.ws.send(JSON.stringify({ type: 'kick-device', ip, hostname }));
+      }
+    };
+    
+    dom.dialogConfirm.addEventListener('click', handler);
+    dom.dialogCancel.onclick = () => {
+      dom.dialogOverlay.classList.add('hidden');
+      dom.dialogConfirm.removeEventListener('click', handler);
+      dom.dialogConfirm.textContent = 'Delete'; // Reset
+    };
   }
 
   function getDeviceIcon(osStr) {

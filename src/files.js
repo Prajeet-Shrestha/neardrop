@@ -42,12 +42,14 @@ function createFileRoutes(config, broadcast, pin) {
   router.get('/info', (req, res) => {
     const os = require('os');
     const { getLocalIPs } = require('./utils');
+    const { isLocalhostSocket } = require('./auth');
     const disk = getDiskSpace(rootDir);
     res.json({
       hostname: os.hostname(),
       os: `${os.type()} ${os.release()}`,
       platform: os.platform(),
       ips: getLocalIPs(),
+      isHost: isLocalhostSocket(req.socket.remoteAddress),
       disk: {
         total: formatBytes(disk.total),
         free: formatBytes(disk.free),

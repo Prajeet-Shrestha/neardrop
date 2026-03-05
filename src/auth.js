@@ -167,4 +167,7 @@ module.exports = {
   handleAuth,
   handleLogout,
   validateWsAuth,
+  sessions,
+  isLocalhostSocket,
+  parseCookie,
 };
