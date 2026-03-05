@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NearDrop — LAN File Transfer</title>
+  <meta name="description" content="Share files across your local network instantly. No cloud, no accounts, no app installs. Open source, private, and fast.">
+  <meta property="og:title" content="NearDrop — LAN File Transfer">
+  <meta property="og:description" content="Share files across your local network instantly. No cloud, no accounts, no app installs.">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ───── NAV ───── -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <img src="icon.png" alt="NearDrop" class="nav-logo">
+        <span class="nav-name">NearDrop</span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="nav-links" id="navLinks">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/Prajeet-Shrestha/neardrop" target="_blank" rel="noopener" class="nav-github">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ───── HERO ───── -->
+  <section class="hero" id="hero">
+    <div class="hero-glow"></div>
+    <div class="container hero-content">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Open Source &amp; Free
+      </div>
+      <h1 class="hero-title">
+        Share files across any OS.<br>
+        <span class="gradient-text">No cloud. No internet. No accounts.</span>
+      </h1>
+      <p class="hero-sub">
+        Transfer files between Mac, Windows, and Linux on the same network. Just open the app; no sign-ups, everything stays on your LAN.
+      </p>
+      <div class="hero-actions">
+        <a href="#download" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </a>
+        <a href="https://github.com/Prajeet-Shrestha/neardrop" target="_blank" rel="noopener" class="btn btn-outline">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <div class="hero-visual" id="install">
+        <div class="hero-terminal">
+          <div class="ht-bar">
+            <div class="ht-bar-left">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <div class="ht-tabs">
+                <button class="ht-tab active" data-tab="oneliner">One-Liner</button>
+                <button class="ht-tab" data-tab="source">npm</button>
+                <button class="ht-tab" data-tab="binary">Binary</button>
+              </div>
+            </div>
+            <div class="ht-bar-right">
+              <span class="ht-platform">macOS/Linux</span>
+              <span class="ht-badge">v1.0</span>
+            </div>
+          </div>
+          <div class="ht-panels">
+            <div class="ht-panel active" id="ht-oneliner">
+              <div class="ht-comment"># Works everywhere. Installs everything. You're welcome. 🚀</div>
+              <div class="ht-command">
+                <span class="ht-prompt">$</span> curl -fsSL https://raw.githubusercontent.com/Prajeet-Shrestha/neardrop/main/install.sh | bash
+                <button class="copy-btn" data-copy="curl -fsSL https://raw.githubusercontent.com/Prajeet-Shrestha/neardrop/main/install.sh | bash" aria-label="Copy to clipboard">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="ht-panel" id="ht-source">
+              <div class="ht-comment"># Clone, install, and run from source.</div>
+              <div class="ht-command">
+                <span class="ht-prompt">$</span> git clone https://github.com/Prajeet-Shrestha/neardrop.git &amp;&amp; cd neardrop &amp;&amp; npm install &amp;&amp; npm start
+                <button class="copy-btn" data-copy="git clone https://github.com/Prajeet-Shrestha/neardrop.git && cd neardrop && npm install && npm start" aria-label="Copy to clipboard">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="ht-panel" id="ht-binary">
+              <div class="ht-comment"># Download pre-built binary — no Node.js needed.</div>
+              <div class="ht-command">
+                <span class="ht-prompt">$</span> chmod +x neardrop-macos-arm64 &amp;&amp; ./neardrop-macos-arm64
+                <button class="copy-btn" data-copy="chmod +x neardrop-macos-arm64 && ./neardrop-macos-arm64" aria-label="Copy to clipboard">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="ht-footer">Works on macOS, Windows &amp; Linux. The one-liner installs Node.js and everything else for you.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───── VALUE PROPS ───── -->
+  <section class="section values-section">
+    <div class="container">
+      <div class="values-grid">
+        <div class="value-item reveal">
+          <h3>Private</h3>
+          <p>Everything stays on your local network. No cloud servers, no tracking, no data leaves your WiFi.</p>
+        </div>
+        <div class="value-item reveal">
+          <h3>Open Source</h3>
+          <p>MIT licensed. Read the code, fork it, extend it, build something even better.</p>
+        </div>
+        <div class="value-item reveal">
+          <h3>Fast</h3>
+          <p>Direct LAN transfer at full network speed. No upload limits, no compression, no waiting.</p>
+        </div>
+        <div class="value-item reveal">
+          <h3>Simple</h3>
+          <p>Run the app, connect devices via any browser, and start sharing files; no installs, no accounts, no sign-ups.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- ───── FEATURES ───── -->
+  <section class="section section-alt" id="features">
+    <div class="container">
+      <h2 class="section-label">› Features</h2>
+      <p class="section-desc">Everything you need for fast, private file sharing on your local network.</p>
+      <div class="features-grid">
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+          </div>
+          <h3>File Browsing</h3>
+          <p>Finder-style icon and list views with sort, search, and breadcrumb navigation.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+          </div>
+          <h3>Drag &amp; Drop Upload</h3>
+          <p>Drop files or folders right into the browser. Upload progress tracking built in.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          </div>
+          <h3>Real-time Chat</h3>
+          <p>Instant messaging between all connected devices via WebSocket.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+          </div>
+          <h3>QR Code Connect</h3>
+          <p>Scan from your phone to connect instantly. No app install needed.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <h3>PIN Authentication</h3>
+          <p>Auto-generated 6-digit PIN. No accounts, no passwords to remember.</p>
+        </div>
+        <div class="feature-card reveal">
+          <div class="feature-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>TLS Encryption</h3>
+          <p>Auto-generates self-signed certificates. Your files stay on your network.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+  <!-- ───── DOWNLOAD ───── -->
+  <section class="section section-alt" id="download">
+    <div class="container">
+      <h2 class="section-label">› Download</h2>
+      <p class="section-desc">Pre-built desktop apps and standalone binaries — no Node.js required.</p>
+      <div class="download-grid">
+        <a href="https://github.com/Prajeet-Shrestha/neardrop/releases/latest" target="_blank" rel="noopener" class="download-card reveal">
+          <div class="download-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <div class="download-platform">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            macOS
+          </div>
+          <span class="download-file">.dmg</span>
+          <span class="download-arrow">↗</span>
+        </a>
+        <a href="https://github.com/Prajeet-Shrestha/neardrop/releases/latest" target="_blank" rel="noopener" class="download-card reveal">
+          <div class="download-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <div class="download-platform">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+            Windows
+          </div>
+          <span class="download-file">.exe</span>
+          <span class="download-arrow">↗</span>
+        </a>
+        <a href="https://github.com/Prajeet-Shrestha/neardrop/releases/latest" target="_blank" rel="noopener" class="download-card reveal">
+          <div class="download-icon">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 110 20 10 10 0 010-20z"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+          </div>
+          <div class="download-platform">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12.504 0c-.155 0-.311.002-.465.014-.994.082-1.93.428-2.743.957-.813.529-1.519 1.314-1.983 2.253-.235.476-.405.988-.517 1.518-.083.396-.142.807-.184 1.227-.14 1.374-.072 2.806.184 4.096.126.64.306 1.256.548 1.834.15.358.327.7.533 1.02L2.4 17.4l1.2 1.2 4.488-4.488c.48.312 1.008.552 1.56.72.96.288 2.016.384 3.048.288 1.248-.12 2.424-.528 3.36-1.176.96-.66 1.68-1.56 2.088-2.592.096-.24.168-.48.24-.72H12v-2.4h8.88c.12-.48.192-.984.216-1.488.024-.504 0-1.008-.072-1.512-.228-1.584-.96-3.072-2.1-4.212C17.784.924 16.2.084 14.436.012 13.794-.012 13.152 0 12.504 0z"/></svg>
+            Linux
+          </div>
+          <span class="download-file">.AppImage</span>
+          <span class="download-arrow">↗</span>
+        </a>
+      </div>
+      <p class="download-note">
+        All CLI binaries also available — <a href="https://github.com/Prajeet-Shrestha/neardrop/releases/latest" target="_blank" rel="noopener">view all releases →</a>
+      </p>
+    </div>
+  </section>
+
+
+
+  <!-- ───── FOOTER ───── -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="icon.png" alt="NearDrop" class="footer-logo">
+        <span>NearDrop</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/Prajeet-Shrestha/neardrop" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/Prajeet-Shrestha/neardrop/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/Prajeet-Shrestha/neardrop/issues" target="_blank" rel="noopener">Issues</a>
+      </div>
+      <p class="footer-copy">MIT License · Built by <a href="https://github.com/Prajeet-Shrestha" target="_blank" rel="noopener">Prajeet Shrestha</a></p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

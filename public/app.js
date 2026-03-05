@@ -119,6 +119,16 @@
     folderNameInput: $('#folder-name-input'),
     folderDialogCancel: $('#folder-dialog-cancel'),
     folderDialogCreate: $('#folder-dialog-create'),
+    // About
+    sidebarAbout: $('#sidebar-about'),
+    aboutModalOverlay: $('#about-modal-overlay'),
+    aboutModalClose: $('#about-modal-close'),
+    aboutVersion: $('#about-version'),
+    aboutDonate: $('#about-donate'),
+    aboutGithub: $('#about-github'),
+    aboutAppdataRow: $('#about-appdata-row'),
+    aboutAppdataPath: $('#about-appdata-path'),
+    aboutAppdataOpen: $('#about-appdata-open'),
     // Hidden inputs
     fileInput: $('#file-input'),
     folderInput: $('#folder-input'),
@@ -279,6 +289,7 @@
     dom.app.classList.remove('hidden');
     dom.thisDeviceName.textContent = info.hostname || 'This Device';
     state.diskFree = info.disk.free;
+    state.serverInfo = info;
     if (info.version && dom.statusVersion) dom.statusVersion.textContent = 'v' + info.version;
     
     // Hide folder upload on iOS
@@ -1567,6 +1578,10 @@
     }
     // Escape to deselect
     if (e.key === 'Escape') {
+      if (!dom.aboutModalOverlay.classList.contains('hidden')) {
+        closeAboutModal();
+        return;
+      }
       if (!dom.connectModalOverlay.classList.contains('hidden')) {
         closeConnectModal();
         return;
@@ -1646,6 +1661,50 @@
       });
     }
   }
+
+  // ─── About Modal ──────────────────────────────────
+  dom.sidebarAbout.addEventListener('click', openAboutModal);
+  dom.aboutModalClose.addEventListener('click', closeAboutModal);
+  dom.aboutModalOverlay.addEventListener('click', (e) => {
+    if (e.target === dom.aboutModalOverlay) closeAboutModal();
+  });
+
+  function openAboutModal() {
+    const info = state.serverInfo || {};
+    dom.aboutVersion.textContent = info.version ? 'v' + info.version : 'v1.0.0';
+
+    if (info.appDataDir) {
+      dom.aboutAppdataPath.textContent = info.appDataDir;
+      dom.aboutAppdataPath.title = info.appDataDir;
+      dom.aboutAppdataOpen.classList.remove('hidden');
+    } else {
+      dom.aboutAppdataPath.textContent = '\u2014';
+      dom.aboutAppdataOpen.classList.add('hidden');
+    }
+
+    dom.aboutModalOverlay.classList.remove('hidden');
+  }
+
+  function closeAboutModal() {
+    dom.aboutModalOverlay.classList.add('hidden');
+  }
+
+  dom.aboutDonate.addEventListener('click', () => {
+    window.open('https://github.com/Prajeet-Shrestha/neardrop', '_blank');
+  });
+
+  dom.aboutGithub.addEventListener('click', () => {
+    window.open('https://github.com/Prajeet-Shrestha/neardrop', '_blank');
+  });
+
+  dom.aboutAppdataOpen.addEventListener('click', () => {
+    const info = state.serverInfo || {};
+    if (isElectron && window.electronAPI.openPath && info.appDataDir) {
+      window.electronAPI.openPath(info.appDataDir);
+    } else {
+      showToast('info', 'Available in the desktop app only');
+    }
+  });
 
   // ─── Start ──────────────────────────────────────────
   init();

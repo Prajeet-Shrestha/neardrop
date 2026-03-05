@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, dialog, shell, session, nativeImage } = require('electron');
+const { app, BrowserWindow, Menu, Tray, dialog, shell, session, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { version } = require('../package.json');
@@ -314,6 +314,17 @@ app.whenReady().then(async () => {
   // Create window and tray
   createWindow();
   createTray();
+
+  // ─── IPC: Open Directory ─────────────────────────────
+  ipcMain.handle('open-path', async (_, dirPath) => {
+    const os = require('os');
+    const allowed = [
+      serverInstance?.config?.dir,
+      path.join(os.homedir(), '.neardrop'),
+    ].filter(Boolean);
+    if (!allowed.some(a => dirPath.startsWith(a))) return;
+    return shell.openPath(dirPath);
+  });
 
   // Initialize auto-updater (only in packaged builds)
   initAutoUpdater(mainWindow);

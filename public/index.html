@@ -131,6 +131,12 @@
             <span class="chat-badge hidden" id="chat-badge">0</span>
           </div>
         </div>
+        <div class="sidebar-section">
+          <div class="sidebar-item" id="sidebar-about">
+            <svg class="sidebar-icon" width="16" height="16" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.8" fill="currentColor"/></svg>
+            <span>About</span>
+          </div>
+        </div>
       </div>
 
       <!-- CONTENT AREA -->
@@ -272,6 +278,62 @@
               <li id="connect-tls-step" class="hidden">Tap <strong>Advanced</strong> → <strong>Proceed</strong> to accept the certificate</li>
               <li>Enter the PIN above to connect</li>
             </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABOUT MODAL -->
+    <div class="about-modal-overlay hidden" id="about-modal-overlay">
+      <div class="about-modal">
+        <div class="about-modal-header">
+          <span class="about-modal-title">ABOUT</span>
+          <button class="connect-modal-close" id="about-modal-close">&times;</button>
+        </div>
+        <div class="about-modal-body">
+          <div class="about-row">
+            <div class="about-label">
+              Application Language
+              <svg class="about-info-icon" width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.8" fill="currentColor"/></svg>
+            </div>
+            <div class="about-value">
+              <span class="about-lang-display">English (English)</span>
+            </div>
+          </div>
+          <div class="about-row">
+            <div class="about-label">
+              Version
+              <svg class="about-info-icon" width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.8" fill="currentColor"/></svg>
+            </div>
+            <div class="about-value" id="about-version">v1.0.0</div>
+          </div>
+          <div class="about-row">
+            <div class="about-label">
+              Support Development
+              <svg class="about-info-icon" width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.8" fill="currentColor"/></svg>
+            </div>
+            <div class="about-value">
+              <button class="about-btn-donate" id="about-donate">Donate</button>
+            </div>
+          </div>
+          <div class="about-row">
+            <div class="about-label">
+              Source Code
+              <svg class="about-info-icon" width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.8" fill="currentColor"/></svg>
+            </div>
+            <div class="about-value">
+              <button class="about-btn-outline" id="about-github">View on GitHub</button>
+            </div>
+          </div>
+          <div class="about-row" id="about-appdata-row">
+            <div class="about-label">
+              App Data Directory
+              <svg class="about-info-icon" width="12" height="12" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M8 7v4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="8" cy="4.5" r="0.8" fill="currentColor"/></svg>
+            </div>
+            <div class="about-value about-path-row">
+              <span class="about-path-field" id="about-appdata-path">—</span>
+              <button class="about-btn-outline about-btn-open" id="about-appdata-open">Open</button>
+            </div>
           </div>
         </div>
       </div>
