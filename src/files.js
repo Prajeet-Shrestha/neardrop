@@ -140,9 +140,11 @@ function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDevice
     try {
       const os = require('os');
       const { getLocalIPs } = require('./utils');
+      const { isLocalhostSocket } = require('./auth');
       const ips = getLocalIPs();
       const protocol = config.noTls ? 'http' : 'https';
       const port = config.port || 3000;
+      const isHost = isLocalhostSocket(req.socket.remoteAddress);
       
       const urls = ips.map(ip => `${protocol}://${ip.address}:${port}`);
       
@@ -157,7 +159,7 @@ function createFileRoutes(config, broadcast, pinStore, getDeviceByIp, loadDevice
       
       res.json({
         urls,
-        pin: pinStore.current,
+        pin: isHost ? pinStore.current : null,
         protocol,
         port,
         noTls: !!config.noTls,

@@ -1,7 +1,7 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 function getLocalIPs() {
   const interfaces = os.networkInterfaces();
@@ -28,21 +28,23 @@ function getDiskSpace(dirPath) {
     if (process.platform === 'win32') {
       const drive = path.parse(dirPath).root;
       const driveLetter = drive[0]; // 'C' from 'C:\\'
+      // Validate drive letter to be a single alphabetic character
+      if (!/^[A-Za-z]$/.test(driveLetter)) return { free: 0, total: 0, used: 0 };
       try {
         // PowerShell (Win10+, required on Win11 25H2+)
-        const out = execSync(
-          `powershell -NoProfile -c "(Get-PSDrive ${driveLetter} | Select-Object Free,Used | ConvertTo-Json)"`,
-          { encoding: 'utf8', timeout: 5000 }
-        );
+        const out = execFileSync('powershell', [
+          '-NoProfile', '-c',
+          `(Get-PSDrive ${driveLetter} | Select-Object Free,Used | ConvertTo-Json)`
+        ], { encoding: 'utf8', timeout: 5000 });
         const info = JSON.parse(out.trim());
         return { free: info.Free, total: info.Free + info.Used, used: info.Used };
       } catch (e) {
         // Fallback: wmic (older Windows)
         const deviceId = drive.replace('\\', ''); // 'C:'
-        const out = execSync(
-          `wmic logicaldisk where "DeviceID='${deviceId}'" get FreeSpace,Size /format:csv`,
-          { encoding: 'utf8', timeout: 5000 }
-        );
+        const out = execFileSync('wmic', [
+          'logicaldisk', 'where', `DeviceID='${driveLetter}:'`,
+          'get', 'FreeSpace,Size', '/format:csv'
+        ], { encoding: 'utf8', timeout: 5000 });
         const lines = out.trim().split('\n').filter(l => l.trim());
         if (lines.length >= 2) {
           const parts = lines[lines.length - 1].split(',');
@@ -50,7 +52,7 @@ function getDiskSpace(dirPath) {
         }
       }
     } else {
-      const out = execSync(`df -k "${dirPath}"`, { encoding: 'utf8', timeout: 5000 });
+      const out = execFileSync('df', ['-k', dirPath], { encoding: 'utf8', timeout: 5000 });
       const lines = out.trim().split('\n');
       if (lines.length >= 2) {
         const parts = lines[1].split(/\s+/);

@@ -1312,11 +1312,16 @@
         showToast('error', data.error || 'Failed to refresh PIN');
         return;
       }
-      const data = await res.json();
-      // Update the displayed PIN
-      const copyIcon = '<svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
-      dom.connectPin.innerHTML = `<span class="connect-pin-value">${esc(data.pin)}</span>${copyIcon}`;
-      dom.connectPin.dataset.copy = data.pin;
+      // Re-fetch connect-info to get the updated PIN
+      const infoRes = await fetch('/api/connect-info');
+      if (infoRes.ok) {
+        const data = await infoRes.json();
+        if (data.pin) {
+          const copyIcon = '<svg class="copy-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>';
+          dom.connectPin.innerHTML = `<span class="connect-pin-value">${esc(data.pin)}</span>${copyIcon}`;
+          dom.connectPin.dataset.copy = data.pin;
+        }
+      }
       showToast('success', 'PIN refreshed');
     } catch (e) {
       showToast('error', 'Failed to refresh PIN');

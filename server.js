@@ -139,7 +139,7 @@ async function startServer(overrides = {}) {
     console.log(`  \x1b[1m🔑 PIN refreshed:\x1b[0m  \x1b[33m\x1b[1m${pinStore.current}\x1b[0m`);
     // Broadcast to all clients so host UI can update
     broadcast({ type: 'pin-refreshed' });
-    return res.json({ success: true, pin: pinStore.current });
+    return res.json({ success: true });
   });
 
   // Chat history endpoint
