@@ -2,6 +2,13 @@
 
 All notable changes to NearDrop will be documented in this file.
 
+## [1.0.1] - 2026-03-06
+
+### Security
+- Fixed command injection risk in `getDiskSpace()` — replaced `execSync` with `execFileSync` using argument arrays
+- PIN is no longer exposed to non-host devices via `/api/connect-info`
+- Removed PIN from `/api/refresh-pin` response body to prevent leakage via logs or proxies
+
 ## [1.0.0] - 2026-03-06
 
 ### Added
