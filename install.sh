@@ -133,8 +133,9 @@ download_asset() {
     ui_info "Downloading ${ASSET_NAME}..."
 
     local http_code
-    http_code=$(curl -L --retry 3 --retry-delay 2 --retry-connrefused \
-        -w "%{http_code}" -o "$DOWNLOAD_PATH" "$DOWNLOAD_URL" 2>/dev/null)
+    printf "  "
+    http_code=$(curl -L -# --retry 3 --retry-delay 2 --retry-connrefused \
+        -w "%{http_code}" -o "$DOWNLOAD_PATH" "$DOWNLOAD_URL")
 
     if [[ "$http_code" != "200" ]]; then
         ui_error "Download failed (HTTP ${http_code})"
@@ -234,6 +235,8 @@ main() {
         ui_kv "Location" "/usr/local/bin/neardrop"
         ui_kv "Run with" "neardrop"
     fi
+    echo ""
+    echo -e "  ${ACCENT}${BOLD}→ Search \"NearDrop\" to launch${NC}"
     echo ""
     ui_info "Releases: https://github.com/${REPO}/releases"
     echo ""
