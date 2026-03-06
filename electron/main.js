@@ -4,6 +4,11 @@ const fs = require('fs');
 const { version } = require('../package.json');
 const { initAutoUpdater, checkForUpdates } = require('./updater');
 
+// Linux AppImages can't use the SUID sandbox
+if (process.platform === 'linux') {
+  app.commandLine.appendSwitch('no-sandbox');
+}
+
 // ─── State ───────────────────────────────────────────
 let mainWindow = null;
 let tray = null;
