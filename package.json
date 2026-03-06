@@ -1,6 +1,6 @@
 {
   "name": "neardrop",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "Finder-inspired LAN file transfer application",
   "main": "electron/main.js",
   "bin": "server.js",

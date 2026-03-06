@@ -24,10 +24,21 @@ gh auth status >/dev/null 2>&1 || fail "gh is not authenticated — run: gh auth
 # Ensure we're in the project root
 [ -f "package.json" ] || fail "Run this script from the project root"
 
-# Ensure clean working tree
+# ─── Handle dirty working tree ────────────────────────
 if [ -n "$(git status --porcelain)" ]; then
-  fail "Working tree is dirty. Commit or stash changes first."
+  warn "Working tree has uncommitted changes:"
+  git status --short
+  echo ""
+  read -p "Include these changes in the release commit? [y/N]: " INCLUDE
+  if [[ ! "$INCLUDE" =~ ^[Yy]$ ]]; then
+    fail "Commit or stash your changes first, then re-run."
+  fi
 fi
+
+# ─── Run tests BEFORE anything else ──────────────────
+info "Running tests..."
+npm test || fail "Tests failed. Fix before releasing."
+ok "Tests passed"
 
 # ─── Current version ─────────────────────────────────
 CURRENT=$(node -p "require('./package.json').version")
@@ -36,7 +47,13 @@ echo -e "${BOLD}🔗 NearDrop Release Script${NC}"
 echo -e "   Current version: ${CYAN}v${CURRENT}${NC}"
 echo ""
 
+# ─── CHANGELOG check ─────────────────────────────────
+echo -e "${YELLOW}⚠  Have you updated CHANGELOG.md for this release?${NC}"
+read -p "Continue? [y/N]: " CHANGELOG_OK
+[[ "$CHANGELOG_OK" =~ ^[Yy]$ ]] || fail "Update CHANGELOG.md first, then re-run."
+
 # ─── Ask for bump type ────────────────────────────────
+echo ""
 echo -e "${BOLD}Which version bump?${NC}"
 echo "  1) patch  (bug fixes, security patches)"
 echo "  2) minor  (new features, backward compatible)"
@@ -58,8 +75,9 @@ ok "Version bumped: ${CURRENT} → ${NEW_VERSION}"
 # ─── Confirm ─────────────────────────────────────────
 echo ""
 echo -e "${BOLD}Will release:${NC} v${NEW_VERSION} (${BUMP})"
+echo -e "${BOLD}Output:${NC}     dist-electron/v${NEW_VERSION}/"
 echo -e "${BOLD}Actions:${NC}"
-echo "  • Commit version bump"
+echo "  • Commit all changes + version bump"
 echo "  • Build for macOS, Windows, Linux (x64 + arm64)"
 echo "  • Create git tag v${NEW_VERSION}"
 echo "  • Push to GitHub"
@@ -67,18 +85,12 @@ echo "  • Create GitHub Release with all artifacts"
 echo ""
 read -p "Proceed? [y/N]: " CONFIRM
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
-  # Revert the version bump
   npm version "$CURRENT" --no-git-tag-version --allow-same-version >/dev/null
   fail "Aborted. Version reverted to ${CURRENT}."
 fi
 
-# ─── Run tests ────────────────────────────────────────
-info "Running tests..."
-npm test || fail "Tests failed. Fix before releasing."
-ok "Tests passed"
-
 # ─── Commit ───────────────────────────────────────────
-info "Committing version bump..."
+info "Committing..."
 git add -A
 git commit -m "release: v${NEW_VERSION}" --quiet
 ok "Committed"
@@ -86,7 +98,12 @@ ok "Committed"
 # ─── Build ────────────────────────────────────────────
 OUT_DIR="dist-electron/v${NEW_VERSION}"
 info "Building for all platforms into ${OUT_DIR}/ ..."
-npx electron-builder -mwl -c.directories.output="$OUT_DIR"
+if ! npx electron-builder -mwl -c.directories.output="$OUT_DIR"; then
+  warn "Build failed — rolling back commit..."
+  git reset --soft HEAD~1
+  npm version "$CURRENT" --no-git-tag-version --allow-same-version >/dev/null
+  fail "Build failed. Commit reverted, version reset to ${CURRENT}."
+fi
 ok "Build complete → ${OUT_DIR}/"
 
 # ─── Tag ──────────────────────────────────────────────
@@ -96,8 +113,11 @@ ok "Tagged"
 
 # ─── Push ─────────────────────────────────────────────
 info "Pushing to GitHub..."
-git push --quiet
-git push --tags --quiet
+if ! git push --quiet || ! git push --tags --quiet; then
+  warn "Push failed — cleaning up tag..."
+  git tag -d "v${NEW_VERSION}" 2>/dev/null || true
+  fail "Push failed. Local tag removed. Commit is still in place — fix the issue and re-run."
+fi
 ok "Pushed"
 
 # ─── Collect artifacts ────────────────────────────────
@@ -114,28 +134,39 @@ for f in "${OUT_DIR}"/*.blockmap; do
 done
 
 if [ ${#ARTIFACTS[@]} -eq 0 ]; then
-  warn "No artifacts found to upload"
+  warn "No artifacts found in ${OUT_DIR}/ — creating release without binaries"
 fi
 
 # ─── Create GitHub Release ────────────────────────────
-info "Creating GitHub Release..."
+info "Creating GitHub Release with ${#ARTIFACTS[@]} artifacts..."
+
+REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner)
+
+# Build compare URL (only if previous tag exists)
+COMPARE=""
+if git tag -l "v${CURRENT}" | grep -q "v${CURRENT}"; then
+  COMPARE="**Full Changelog**: https://github.com/${REPO}/compare/v${CURRENT}...v${NEW_VERSION}"
+fi
 
 NOTES="## What's Changed
 
-### Security / Fixes
-- See [CHANGELOG.md](https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner)/blob/main/CHANGELOG.md) for details.
+See [CHANGELOG.md](https://github.com/${REPO}/blob/main/CHANGELOG.md) for details.
 
-**Full Changelog**: https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner)/compare/v${CURRENT}...v${NEW_VERSION}"
+${COMPARE}"
 
-gh release create "v${NEW_VERSION}" \
+if ! gh release create "v${NEW_VERSION}" \
   --title "v${NEW_VERSION}" \
   --notes "$NOTES" \
-  "${ARTIFACTS[@]}"
+  "${ARTIFACTS[@]}"; then
+  warn "GitHub release creation failed — but tag and commits are already pushed."
+  warn "Create the release manually: gh release create v${NEW_VERSION} ${OUT_DIR}/*"
+  exit 1
+fi
 
 ok "GitHub Release created"
 
 # ─── Done ─────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}🎉 v${NEW_VERSION} released successfully!${NC}"
-echo -e "   ${CYAN}https://github.com/$(gh repo view --json nameWithOwner -q .nameWithOwner)/releases/tag/v${NEW_VERSION}${NC}"
+echo -e "   ${CYAN}https://github.com/${REPO}/releases/tag/v${NEW_VERSION}${NC}"
 echo ""
