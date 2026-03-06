@@ -270,15 +270,21 @@ function createWindow() {
   });
 }
 
-// ─── App Lifecycle ───────────────────────────────────
-app.whenReady().then(async () => {
-  // Single instance lock
-  const gotLock = app.requestSingleInstanceLock();
-  if (!gotLock) {
+// ─── Windows Squirrel Events ─────────────────────────
+// NSIS installers fire the app with --squirrel-* args during install/update/uninstall
+if (process.platform === 'win32') {
+  const cmd = process.argv[1];
+  if (cmd === '--squirrel-install' || cmd === '--squirrel-updated' ||
+      cmd === '--squirrel-uninstall' || cmd === '--squirrel-obsolete') {
     app.quit();
-    return;
   }
+}
 
+// ─── Single Instance Lock (must be before whenReady) ─
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+} else {
   app.on('second-instance', () => {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
@@ -287,56 +293,58 @@ app.whenReady().then(async () => {
     }
   });
 
-  // Set About panel version
-  app.setAboutPanelOptions({
-    applicationName: 'NearDrop',
-    applicationVersion: version,
-    copyright: '© 2026 Prajeet Shrestha',
+  app.whenReady().then(async () => {
+    // Set About panel version
+    app.setAboutPanelOptions({
+      applicationName: 'NearDrop',
+      applicationVersion: version,
+      copyright: '© 2026 Prajeet Shrestha',
+    });
+
+    // Create menu
+    createMenu();
+
+    // Find free port
+    try {
+      serverPort = await findFreePort(51337, 51347);
+    } catch (e) {
+      dialog.showErrorBox('NearDrop', `Could not find a free port (51337-51347): ${e.message}`);
+      app.quit();
+      return;
+    }
+
+    // Start embedded server (HTTP — no TLS issues for WebSocket or external devices)
+    try {
+      const { startServer } = require(path.join(__dirname, '..', 'server.js'));
+      serverInstance = await startServer({ port: serverPort, embedded: true, noTls: true });
+    } catch (e) {
+      dialog.showErrorBox('NearDrop', `Server failed to start: ${e.message}`);
+      app.quit();
+      return;
+    }
+
+    // Create window and tray
+    createWindow();
+    createTray();
+
+    // ─── IPC: Open Directory ─────────────────────────────
+    ipcMain.handle('open-path', async (_, dirPath) => {
+      const os = require('os');
+      const allowed = [
+        serverInstance?.config?.dir,
+        path.join(os.homedir(), '.neardrop'),
+      ].filter(Boolean);
+      if (!allowed.some(a => dirPath.startsWith(a))) return;
+      return shell.openPath(dirPath);
+    });
+
+    // Initialize auto-updater (only in packaged builds)
+    initAutoUpdater(mainWindow);
+
+    // Update tray menu periodically (PIN might change)
+    setInterval(updateTrayMenu, 5000);
   });
-
-  // Create menu
-  createMenu();
-
-  // Find free port
-  try {
-    serverPort = await findFreePort(51337, 51347);
-  } catch (e) {
-    dialog.showErrorBox('NearDrop', `Could not find a free port (51337-51347): ${e.message}`);
-    app.quit();
-    return;
-  }
-
-  // Start embedded server (HTTP — no TLS issues for WebSocket or external devices)
-  try {
-    const { startServer } = require(path.join(__dirname, '..', 'server.js'));
-    serverInstance = await startServer({ port: serverPort, embedded: true, noTls: true });
-  } catch (e) {
-    dialog.showErrorBox('NearDrop', `Server failed to start: ${e.message}`);
-    app.quit();
-    return;
-  }
-
-  // Create window and tray
-  createWindow();
-  createTray();
-
-  // ─── IPC: Open Directory ─────────────────────────────
-  ipcMain.handle('open-path', async (_, dirPath) => {
-    const os = require('os');
-    const allowed = [
-      serverInstance?.config?.dir,
-      path.join(os.homedir(), '.neardrop'),
-    ].filter(Boolean);
-    if (!allowed.some(a => dirPath.startsWith(a))) return;
-    return shell.openPath(dirPath);
-  });
-
-  // Initialize auto-updater (only in packaged builds)
-  initAutoUpdater(mainWindow);
-
-  // Update tray menu periodically (PIN might change)
-  setInterval(updateTrayMenu, 5000);
-});
+}
 
 // Graceful shutdown
 app.on('before-quit', () => {
@@ -373,3 +381,4 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Rejection:', reason);
 });
+
