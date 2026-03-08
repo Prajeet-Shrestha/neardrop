@@ -9,9 +9,22 @@ All notable changes to NearDrop will be documented in this file.
 - Dock/taskbar progress bar during update downloads
 - Release script (`release.sh`) and remove-release script (`remove-release.sh`)
 - Linux builds now include both x64 and arm64 architectures
+- **Learn modal** in sidebar — explains Host Mode, Client Mode, Quick Start guide, and tips
+- **Drag-select (rubber band) selection** — click and drag on content area to select multiple files (Finder-style)
+- **Multi-file download** — select multiple files and right-click → Download or press ⌘/Ctrl+D to download all simultaneously
+- Each download gets its own individual progress card with speed and cancel button
+
+### Fixed
+- **Linux shared memory crash** — fixed `ESRCH (No such process)` error on `/dev/shm` by disabling renderer sandbox on Linux and auto-fixing `/dev/shm` at startup
+- **Linux `/usr/bin/neardrop` missing** — `.deb` post-install now creates the symlink automatically
+- **Host mode connect behavior** — "Connect to Another Device" from host mode now properly switches to client mode and stops the host, instead of opening a remote window alongside the running host
+- **Connect modal crash** — fixed `Failed to load connection info` error caused by removed HTML element reference
 
 ### Changed
 - Build artifacts now output into versioned folders (`dist-electron/v1.x.x/`)
+- Removed "How to connect" steps from Connect modal (now in Learn modal)
+- Donate button now links to buymemomo.com/davinci
+- Sidebar bottom section (Learn, About, Settings) pushed to bottom of sidebar
 
 ## [1.0.1] - 2026-03-06
 

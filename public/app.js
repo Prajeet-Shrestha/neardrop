@@ -5,6 +5,23 @@
 (function() {
   'use strict';
 
+  // ─── Clipboard Helper (works on insecure HTTP too) ──
+  function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    // Fallback for insecure contexts (HTTP LAN IPs)
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+    return Promise.resolve();
+  }
+
   // ─── State ──────────────────────────────────────────
   const state = {
     authenticated: false,
@@ -1263,7 +1280,7 @@
     
     // Click to copy
     msgEl.querySelector('.chat-msg-bubble').addEventListener('click', () => {
-      navigator.clipboard.writeText(msg.text).then(() => {
+      copyToClipboard(msg.text).then(() => {
         showToast('success', 'Copied to clipboard');
       });
     });
@@ -1352,7 +1369,7 @@
         el.addEventListener('click', () => {
           const text = el.dataset.copy;
           if (text) {
-            navigator.clipboard.writeText(text).then(() => showToast('success', 'Copied to clipboard'));
+            copyToClipboard(text).then(() => showToast('success', 'Copied to clipboard'));
           }
         });
       });
