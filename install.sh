@@ -73,7 +73,7 @@ detect_platform() {
 
     case "$ARCH" in
         arm64|aarch64) ARCH_LABEL="arm64" ;;
-        x86_64|amd64)  ARCH_LABEL="x64" ;;
+        x86_64|amd64)  ARCH_LABEL="x86_64" ;;
         *)
             ui_error "Unsupported architecture: ${ARCH}"
             exit 1
